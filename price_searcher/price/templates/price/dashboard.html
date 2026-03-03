@@ -96,7 +96,7 @@
                   <th class="px-3 sm:px-6 py-4 font-semibold">型号</th>
                   <th class="px-3 sm:px-6 py-4 font-semibold hidden sm:table-cell">最新日期</th>
                   <th class="px-3 sm:px-6 py-4 font-semibold text-right">最低价 (¥)</th>
-                  <th class="px-3 sm:px-6 py-4 font-semibold text-right hidden md:table-cell">平均价波动</th>
+                  <th class="px-3 sm:px-6 py-4 font-semibold text-right">平均价波动</th>
                   <th class="px-3 sm:px-6 py-4 font-semibold text-right">操作</th>
                 </tr>
               </thead>
@@ -110,22 +110,22 @@
       <!-- 具体型号详情：仅当 modelSelect 有选具体型号时显示 -->
       <div id="detailSection" class="hidden space-y-8">
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-            <p class="text-slate-500 text-sm font-medium mb-2">当前最低价</p>
-            <p id="cardLow" class="text-3xl font-bold">--</p>
+        <div class="grid grid-cols-4 gap-2 md:gap-6">
+          <div class="bg-slate-800/50 p-3 md:p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-xs md:text-sm font-medium mb-1 md:mb-2 truncate">当前最低价</p>
+            <p id="cardLow" class="text-base md:text-3xl font-bold">--</p>
           </div>
-          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-            <p class="text-slate-500 text-sm font-medium mb-2">24h 价格波动</p>
-            <p id="cardChange" class="text-3xl font-bold text-slate-400">--</p>
+          <div class="bg-slate-800/50 p-3 md:p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-xs md:text-sm font-medium mb-1 md:mb-2 truncate">24h 波动</p>
+            <p id="cardChange" class="text-base md:text-3xl font-bold text-slate-400">--</p>
           </div>
-          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-            <p class="text-slate-500 text-sm font-medium mb-2">收录条数（当日）</p>
-            <p id="cardCount" class="text-3xl font-bold">--</p>
+          <div class="bg-slate-800/50 p-3 md:p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-xs md:text-sm font-medium mb-1 md:mb-2 truncate">收录条数</p>
+            <p id="cardCount" class="text-base md:text-3xl font-bold">--</p>
           </div>
-          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
-            <p class="text-slate-500 text-sm font-medium mb-2">数据日期</p>
-            <p id="cardDate" class="text-lg font-bold">--</p>
+          <div class="bg-slate-800/50 p-3 md:p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-xs md:text-sm font-medium mb-1 md:mb-2 truncate">数据日期</p>
+            <p id="cardDate" class="text-xs md:text-lg font-bold">--</p>
           </div>
         </div>
         <!-- Charts -->
@@ -414,8 +414,8 @@
           "<td class=\"px-3 sm:px-6 py-3 sm:py-4 font-medium text-sm\">" + (kw.name || "") + "</td>" +
           "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-slate-400 text-sm hidden sm:table-cell\">" + date + "</td>" +
           "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm\">" + price + "</td>" +
-          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm hidden md:table-cell\">" + changeHtml + "</td>" +
-          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right\"><span class=\"text-primary text-xs sm:text-sm cursor-pointer\">详情</span></td></tr>";
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm\">" + changeHtml + "</td>" +
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right\"><span class=\"inline-block text-primary text-xs font-medium border border-primary/40 rounded px-2 py-0.5 hover:bg-primary/10 cursor-pointer\">详情</span></td></tr>";
       }).join("");
       overviewTableBody.innerHTML = rows;
       overviewTableBody.querySelectorAll("tr").forEach(function (tr) {
