@@ -6,8 +6,9 @@ services:
   - type: web
     name: price-searcher
     runtime: python
-    # Use the directory that contains manage.py and requirements.txt (Django app)
-    rootDir: price_searcher
+    # If your repo root IS the Django app (only this folder), leave rootDir blank or remove it.
+    # If your repo has a parent folder and this app is in price_searcher/, set rootDir: price_searcher
+    # rootDir: price_searcher
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: gunicorn price_searcher.wsgi:application
     releaseCommand: python manage.py migrate --noinput
