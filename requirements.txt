@@ -1,9 +1,0 @@
-Django>=5.2
-djangorestframework
-python-dotenv
-# Render / production
-gunicorn
-dj-database-url
-psycopg2-binary
-whitenoise
-requests
