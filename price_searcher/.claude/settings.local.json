@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(python manage.py seed_other_hardware_keywords:*)",
+      "Bash(python manage.py shell:*)",
+      "Bash(python manage.py seed_gpu_keywords:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

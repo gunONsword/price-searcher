@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>硬件价格监控仪表盘</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#3c83f6" }, fontFamily: { display: ["Inter", "sans-serif"] } } } };
+  </script>
+  <style>
+    body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 10px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex overflow-x-hidden">
+  <!-- Mobile overlay -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 border-r border-slate-800 flex flex-col h-screen bg-slate-950 transition-transform duration-300 -translate-x-full md:translate-x-0 md:sticky md:top-0 md:z-auto">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3 text-primary">
+          <span class="text-2xl">📊</span>
+          <h1 class="text-xl font-bold tracking-tight">硬件监控中心</h1>
+        </div>
+        <button type="button" class="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400" onclick="closeSidebar()">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <nav class="space-y-1" id="categoryNav">
+        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-semibold cursor-pointer" href="#" data-category="gpu"><span>🎮</span><span>显卡 (GPU)</span></a>
+        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="cpu"><span>🔲</span><span>处理器 (CPU)</span></a>
+        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="ram"><span>📦</span><span>内存 (RAM)</span></a>
+        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="ssd"><span>💾</span><span>固态硬盘 (SSD)</span></a>
+        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="motherboard"><span>🔧</span><span>主板</span></a>
+      </nav>
+    </div>
+    <div class="px-4 flex-1 overflow-y-auto custom-scrollbar">
+      <p class="text-slate-500 text-xs font-medium mb-2 px-2">采集关键词（勾选参与采集）</p>
+      <label class="flex items-center gap-2 px-2 py-1 cursor-pointer text-sm"><input type="checkbox" id="selectAllKeywords" class="rounded"/> 全选</label>
+      <div id="keywordCheckList" class="max-h-40 overflow-y-auto space-y-0.5 py-2"></div>
+      <button type="button" id="seedKeywordsBtn" class="w-full mt-2 py-2 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">添加当前类别预设关键词</button>
+    </div>
+    <div class="p-4 border-t border-slate-800">
+      <button type="button" id="collectBtn" class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-lg transition-all">
+        <span>🔄</span><span>采集勾选项</span>
+      </button>
+      <button type="button" id="collectAllBtn" class="w-full flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-all mt-2 text-sm">
+        <span>⚡</span><span>一键采集全部</span>
+      </button>
+      <p id="collectStatus" class="text-xs text-slate-500 mt-2 truncate"></p>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar">
+    <header class="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 md:px-8 py-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
+        <div class="flex items-center gap-3 min-w-0">
+          <!-- Hamburger button (mobile only) -->
+          <button type="button" id="sidebarToggle" class="md:hidden flex-shrink-0 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="toggleSidebar()">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="min-w-0">
+            <h2 id="mainTitle" class="text-lg sm:text-2xl font-bold truncate">显卡价格监控</h2>
+            <p id="mainSubtitle" class="text-slate-500 text-xs sm:text-sm">选择型号查看详情，或查看全部型号概览</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <label class="text-sm text-slate-400 whitespace-nowrap">型号</label>
+          <select id="modelSelect" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 w-full sm:min-w-[180px] text-sm focus:ring-2 focus:ring-primary">
+            <option value="">全部（总体概览）</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <div class="p-4 md:p-8 space-y-6 md:space-y-8">
+      <!-- 总体概览：仅当 modelSelect 为 全部 时显示 -->
+      <div id="overviewSection" class="space-y-6">
+        <div class="bg-slate-800/50 rounded-xl border border-slate-800 overflow-hidden">
+          <div class="p-6 border-b border-slate-800">
+            <h3 class="text-lg font-bold">所有型号概览</h3>
+            <p class="text-slate-500 text-sm mt-1">点击某行可切换上方「型号」查看该型号详情</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="bg-slate-800/80 text-slate-400 text-sm">
+                  <th class="px-3 sm:px-6 py-4 font-semibold">型号</th>
+                  <th class="px-3 sm:px-6 py-4 font-semibold hidden sm:table-cell">最新日期</th>
+                  <th class="px-3 sm:px-6 py-4 font-semibold text-right">最低价 (¥)</th>
+                  <th class="px-3 sm:px-6 py-4 font-semibold text-right hidden md:table-cell">平均价波动</th>
+                  <th class="px-3 sm:px-6 py-4 font-semibold text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody id="overviewTableBody" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+          <div id="overviewEmpty" class="p-8 text-center text-slate-500 text-sm hidden">暂无数据，请先执行每日采集或添加预设关键词。</div>
+        </div>
+      </div>
+
+      <!-- 具体型号详情：仅当 modelSelect 有选具体型号时显示 -->
+      <div id="detailSection" class="hidden space-y-8">
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-sm font-medium mb-2">当前最低价</p>
+            <p id="cardLow" class="text-3xl font-bold">--</p>
+          </div>
+          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-sm font-medium mb-2">24h 价格波动</p>
+            <p id="cardChange" class="text-3xl font-bold text-slate-400">--</p>
+          </div>
+          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-sm font-medium mb-2">收录条数（当日）</p>
+            <p id="cardCount" class="text-3xl font-bold">--</p>
+          </div>
+          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+            <p class="text-slate-500 text-sm font-medium mb-2">数据日期</p>
+            <p id="cardDate" class="text-lg font-bold">--</p>
+          </div>
+        </div>
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-lg font-bold">价格趋势</h3>
+                <p id="trendChartSubtitle" class="text-slate-500 text-xs mt-0.5">仅当前选中型号：当日最低价、平均价、最高价及本型号各条商品价格</p>
+              </div>
+              <div id="trendRangebtns" class="flex gap-1">
+                <button data-days="7"  class="trend-range-btn px-3 py-1 rounded-md text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300">7天</button>
+                <button data-days="30" class="trend-range-btn px-3 py-1 rounded-md text-xs font-medium bg-primary text-white">30天</button>
+                <button data-days="0"  class="trend-range-btn px-3 py-1 rounded-md text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300">全部</button>
+              </div>
+            </div>
+            <div class="h-[280px]"><canvas id="trendChart"></canvas></div>
+            <div id="trendEmpty" class="h-[280px] flex items-center justify-center text-slate-500 text-sm hidden">暂无趋势数据</div>
+          </div>
+          <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold">当日价格分布（直方图）</h3>
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-slate-400">区间 ¥</label>
+                <select id="distStep" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-sm">
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                  <option value="500" selected>500</option>
+                  <option value="1000">1000</option>
+                  <option value="10000">10000</option>
+                </select>
+              </div>
+            </div>
+            <p id="distDateLabel" class="text-slate-500 text-xs mb-2"></p>
+            <div class="h-[280px]"><canvas id="distChart"></canvas></div>
+            <div id="distEmpty" class="h-[280px] flex items-center justify-center text-slate-500 text-sm hidden">请选择日期</div>
+          </div>
+        </div>
+        <!-- Lowest Price Table -->
+        <div class="bg-slate-800/50 rounded-xl border border-slate-800 overflow-hidden">
+          <div class="p-6 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-bold">当日各条价格记录</h3>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500 text-sm">价格排序</span>
+              <button type="button" id="priceSortAsc" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-300">从低到高 ↑</button>
+              <button type="button" id="priceSortDesc" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-slate-300">从高到低 ↓</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead>
+                <tr class="bg-slate-800/80 text-slate-400">
+                  <th class="px-3 sm:px-6 py-3 sm:py-4 font-semibold">商品名</th>
+                  <th class="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-right whitespace-nowrap">价格 (¥)</th>
+                  <th class="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-right">操作</th>
+                </tr>
+              </thead>
+              <tbody id="pricesTableBody" class="divide-y divide-slate-800"></tbody>
+            </table>
+          </div>
+          <div id="pricesEmpty" class="p-8 text-center text-slate-500 hidden">暂无记录</div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <select id="distDate" class="hidden"></select>
+  <script>
+    var modelSelect = document.getElementById("modelSelect");
+    var distDate = document.getElementById("distDate");
+    var distStep = document.getElementById("distStep");
+    var mainTitle = document.getElementById("mainTitle");
+    var mainSubtitle = document.getElementById("mainSubtitle");
+    var overviewSection = document.getElementById("overviewSection");
+    var detailSection = document.getElementById("detailSection");
+    var overviewTableBody = document.getElementById("overviewTableBody");
+    var overviewEmpty = document.getElementById("overviewEmpty");
+    var overviewChartEl = document.getElementById("overviewChart");
+    var overviewChartEmpty = document.getElementById("overviewChartEmpty");
+    var trendChartEl = document.getElementById("trendChart");
+    var trendEmpty = document.getElementById("trendEmpty");
+    var distChartEl = document.getElementById("distChart");
+    var distDateLabel = document.getElementById("distDateLabel");
+    var distEmpty = document.getElementById("distEmpty");
+    var pricesTableBody = document.getElementById("pricesTableBody");
+    var pricesEmpty = document.getElementById("pricesEmpty");
+    var cardLow = document.getElementById("cardLow");
+    var cardChange = document.getElementById("cardChange");
+    var cardCount = document.getElementById("cardCount");
+    var cardDate = document.getElementById("cardDate");
+
+    var allSummary = [], allKeywords = [], dates = [], lastDayPrices = [];
+    var trendChart = null, distChart = null, overviewChart = null;
+    var priceSortOrder = "asc";
+    var distChartBinPrices = [];
+    var currentCategory = "gpu";
+    var allDailyData = [];   // full history for active model
+    var trendDays = 30;      // currently selected range (0 = all)
+    var COLORS = ["#3fb950", "#58a6ff", "#d2a8ff", "#f778ba", "#79c0ff"];
+
+    var CATEGORY_TITLES = { gpu: "显卡价格监控", cpu: "处理器价格监控", ram: "内存价格监控", ssd: "固态硬盘价格监控", motherboard: "主板价格监控" };
+    function getCategoryTitle(cat) { return CATEGORY_TITLES[cat] || "硬件价格监控"; }
+    function setCategoryNavActive(cat) {
+      currentCategory = cat || "gpu";
+      document.querySelectorAll(".nav-category").forEach(function (a) {
+        var isActive = a.getAttribute("data-category") === currentCategory;
+        a.classList.toggle("bg-primary/10", isActive);
+        a.classList.toggle("text-primary", isActive);
+        a.classList.toggle("font-semibold", isActive);
+        a.classList.toggle("text-slate-400", !isActive);
+      });
+    }
+
+    function sortKeywords(keywords) {
+      // GPU series priority: RTX 50 > 40 > 30 > RX 9000 > 7000 > 6000 > Arc
+      var GPU_SERIES = [
+        ["RTX 50", 1], ["RTX 40", 2], ["RTX 30", 3],
+        ["RX 9", 4], ["RX 7", 5], ["RX 6", 6],
+        ["Arc ", 7],
+      ];
+      // CPU priority: Core Ultra > Core i9 > i7 > i5 > i3 > Ryzen 9 > 7 > 5
+      var CPU_SERIES = [
+        ["Core Ultra 9", 1], ["Core Ultra 7", 2], ["Core Ultra 5", 3],
+        ["Core i9", 4], ["Core i7", 5], ["Core i5", 6], ["Core i3", 7],
+        ["Ryzen 9", 8], ["Ryzen 7", 9], ["Ryzen 5", 10],
+      ];
+      // Suffix tier: base < Super < Ti < Ti Super (higher = better)
+      var SUFFIX_RANK = { "Ti Super": 4, "Ti": 3, "Super": 2 };
+
+      function getSeriesRank(name, seriesList) {
+        for (var i = 0; i < seriesList.length; i++) {
+          if (name.indexOf(seriesList[i][0]) === 0) return seriesList[i][1];
+        }
+        return 99;
+      }
+
+      function parseModelNum(name) {
+        var m = name.match(/(\d{4})/);
+        return m ? parseInt(m[1], 10) : 0;
+      }
+
+      function getSuffixRank(name) {
+        for (var s in SUFFIX_RANK) {
+          if (name.indexOf(s) !== -1) return SUFFIX_RANK[s];
+        }
+        return 1; // base model
+      }
+
+      return keywords.slice().sort(function (a, b) {
+        var n = a.name, m = b.name;
+        var seriesList = currentCategory === "gpu" ? GPU_SERIES :
+                         currentCategory === "cpu" ? CPU_SERIES : [];
+        // 1) Series group
+        var ra = getSeriesRank(n, seriesList), rb = getSeriesRank(m, seriesList);
+        if (ra !== rb) return ra - rb;
+        // 2) Model number descending (5090 > 5080 > 5070 ...)
+        var na = parseModelNum(n), nb = parseModelNum(m);
+        if (na !== nb) return nb - na;
+        // 3) Suffix: Ti Super > Ti > Super > base, descending
+        var sa = getSuffixRank(n), sb = getSuffixRank(m);
+        if (sa !== sb) return sb - sa;
+        // 4) Fallback: alphabetical descending
+        return m.localeCompare(n, undefined, { numeric: true });
+      });
+    }
+
+    function switchView() {
+      var model = modelSelect.value;
+      if (!model) {
+        overviewSection.classList.remove("hidden");
+        detailSection.classList.add("hidden");
+        mainTitle.textContent = getCategoryTitle(currentCategory);
+        mainSubtitle.textContent = "总体概览 · 选择上方「型号」可查看某一型号详情";
+        renderOverview();
+      } else {
+        overviewSection.classList.add("hidden");
+        detailSection.classList.remove("hidden");
+        mainTitle.textContent = model + " 市场分析";
+        mainSubtitle.textContent = "数据来自乐天市场采集";
+        updateDetailCards(model);
+        loadDailyStats(model);
+        if (distDate.value) {
+          // Re-render distribution chart and table immediately for the selected model (use cached lastDayPrices so UI matches selection)
+          renderDistChart(distDate.value, lastDayPrices);
+          renderPricesTable(lastDayPrices);
+          loadDailyPrices();
+        }
+      }
+    }
+
+    function buildOverviewChartData() {
+      if (!allSummary.length) return { labels: [], avgLow: [], minLow: [], maxHigh: [], scatterAll: [] };
+      var byDate = {};
+      allSummary.forEach(function (row) {
+        var d = row.date;
+        if (!byDate[d]) byDate[d] = { lows: [], highs: [] };
+        byDate[d].lows.push(row.low_price);
+        byDate[d].highs.push(row.high_price);
+      });
+      var sortedDates = Object.keys(byDate).sort();
+      var avgLow = [], minLow = [], maxHigh = [], scatterAll = [];
+      sortedDates.forEach(function (d, idx) {
+        var lows = byDate[d].lows;
+        var highs = byDate[d].highs;
+        var sum = lows.reduce(function (a, b) { return a + b; }, 0);
+        avgLow.push(Math.round(sum / lows.length));
+        minLow.push(Math.min.apply(null, lows));
+        maxHigh.push(Math.max.apply(null, highs));
+        lows.forEach(function (p) { scatterAll.push({ x: d, y: p }); });
+        highs.forEach(function (p) { scatterAll.push({ x: d, y: p }); });
+      });
+      return { labels: sortedDates, avgLow: avgLow, minLow: minLow, maxHigh: maxHigh, scatterAll: scatterAll };
+    }
+
+    function renderOverviewChart() {
+      var data = buildOverviewChartData();
+      if (overviewChart) overviewChart.destroy();
+      overviewChart = null;
+      if (!data.labels.length) {
+        if (overviewChartEl && overviewChartEl.parentElement) overviewChartEl.parentElement.style.display = "none";
+        overviewChartEmpty.classList.remove("hidden");
+        return;
+      }
+      if (overviewChartEl && overviewChartEl.parentElement) overviewChartEl.parentElement.style.display = "block";
+      overviewChartEmpty.classList.add("hidden");
+      overviewChart = new Chart(overviewChartEl, {
+        type: "line",
+        data: {
+          labels: data.labels,
+          datasets: [
+            { type: "scatter", label: "各型号价格", data: data.scatterAll, backgroundColor: "rgba(148, 163, 184, 0.35)", borderColor: "transparent", pointRadius: 3, pointHoverRadius: 5, order: 5 },
+            { label: "每日最高价 (¥)", data: data.maxHigh, borderColor: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.05)", tension: 0.2, fill: false, borderDash: [4, 3], pointRadius: 2, order: 3 },
+            { label: "每日最低价均值 (¥)", data: data.avgLow, borderColor: "#22c55e", backgroundColor: "rgba(34, 197, 94, 0.1)", tension: 0.2, fill: true, order: 2 },
+            { label: "每日最低价 (¥)", data: data.minLow, borderColor: "#3b82f6", backgroundColor: "rgba(59, 130, 246, 0.05)", tension: 0.2, fill: false, order: 1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "top" } },
+          scales: { x: { title: { display: true, text: "日期" } }, y: { beginAtZero: false, title: { display: true, text: "价格 (JPY)" } } }
+        }
+      });
+    }
+
+    function renderOverview() {
+      if (!allKeywords.length) {
+        overviewTableBody.innerHTML = "";
+        overviewEmpty.classList.remove("hidden");
+        return;
+      }
+      overviewEmpty.classList.add("hidden");
+
+      // Build per-keyword avg_price history from allSummary (sorted asc by date)
+      var avgByKw = {};
+      allSummary.forEach(function (row) {
+        var n = row.keyword_name;
+        if (!avgByKw[n]) avgByKw[n] = [];
+        avgByKw[n].push({ date: row.date, avg: row.avg_price });
+      });
+      // Sort each keyword's entries by date ascending
+      Object.keys(avgByKw).forEach(function (n) {
+        avgByKw[n].sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      });
+
+      var rows = allKeywords.map(function (kw) {
+        var price = kw.latest_low_price != null ? "¥" + Number(kw.latest_low_price).toLocaleString() : "--";
+        var date = kw.latest_date || "--";
+
+        // Compute avg price change between last two data points
+        var changeHtml = "<span class=\"text-slate-500\">--</span>";
+        var hist = avgByKw[kw.name] || [];
+        if (hist.length >= 2) {
+          var prevAvg = hist[hist.length - 2].avg;
+          var diff = hist[hist.length - 1].avg - prevAvg;
+          var pct = prevAvg ? (diff / prevAvg * 100).toFixed(1) : "0.0";
+          var arrow = diff > 0 ? "↑" : diff < 0 ? "↓" : "→";
+          var pctSign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+          var cls = diff > 0 ? "text-red-400" : diff < 0 ? "text-emerald-400" : "text-slate-400";
+          changeHtml = "<span class=\"" + cls + " font-medium\">" +
+            arrow + " ¥" + Math.abs(diff).toLocaleString() +
+            " <span class=\"text-xs opacity-75\">(" + pctSign + Math.abs(pct) + "%)</span></span>";
+        }
+
+        var name = (kw.name || "").replace(/"/g, "&quot;");
+        return "<tr class=\"hover:bg-slate-700/30 cursor-pointer\" data-model=\"" + name + "\">" +
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 font-medium text-sm\">" + (kw.name || "") + "</td>" +
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-slate-400 text-sm hidden sm:table-cell\">" + date + "</td>" +
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm\">" + price + "</td>" +
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm hidden md:table-cell\">" + changeHtml + "</td>" +
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right\"><span class=\"text-primary text-xs sm:text-sm cursor-pointer\">详情</span></td></tr>";
+      }).join("");
+      overviewTableBody.innerHTML = rows;
+      overviewTableBody.querySelectorAll("tr").forEach(function (tr) {
+        tr.addEventListener("click", function () {
+          var m = tr.getAttribute("data-model");
+          if (m) { modelSelect.value = m; switchView(); }
+        });
+      });
+    }
+
+    function updateDetailCards(model) {
+      var kw = allKeywords.find(function (k) { return k.name === model; });
+      if (!kw) {
+        cardLow.textContent = "--";
+        cardChange.textContent = "--";
+        cardCount.textContent = "--";
+        cardDate.textContent = "--";
+        return;
+      }
+      cardLow.textContent = kw.latest_low_price != null ? "¥" + Number(kw.latest_low_price).toLocaleString() : "--";
+      cardDate.textContent = kw.latest_date || "--";
+      cardChange.textContent = "--";
+      cardChange.className = "text-3xl font-bold text-slate-400";
+      cardCount.textContent = "--";
+    }
+
+    function renderTrendChart(daily) {
+      if (trendChart) { trendChart.destroy(); trendChart = null; }
+      if (!daily || !daily.length) {
+        trendChartEl.parentElement.style.display = "none";
+        trendEmpty.classList.remove("hidden");
+        return;
+      }
+      trendChartEl.parentElement.style.display = "block";
+      trendEmpty.classList.add("hidden");
+      var labels = daily.map(function (d) { return d.date; });
+      var scatterAll = [];
+      daily.forEach(function (d) {
+        (d.all_prices || []).forEach(function (p) {
+          scatterAll.push({ x: d.date, y: p });
+        });
+      });
+      trendChart = new Chart(trendChartEl, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            { type: "scatter", label: "本型号各条商品价格", data: scatterAll, backgroundColor: "rgba(148, 163, 184, 0.35)", borderColor: "transparent", pointRadius: 3, pointHoverRadius: 5, order: 4 },
+            { label: "最高价", data: daily.map(function (d) { return d.high_price; }), borderColor: "#ef4444", backgroundColor: "rgba(239, 68, 68, 0.05)", tension: 0.2, fill: false, borderDash: [4, 3], pointRadius: 2, order: 3 },
+            { label: "平均价", data: daily.map(function (d) { return d.avg_price; }), borderColor: "#3b82f6", tension: 0.2, fill: false, order: 2 },
+            { label: "最低价", data: daily.map(function (d) { return d.low_price; }), borderColor: "#22c55e", tension: 0.2, fill: false, order: 1 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "top" } }, scales: { x: { type: "category" }, y: { beginAtZero: false } } }
+      });
+    }
+
+    function applyTrendRange() {
+      var slice = trendDays > 0 ? allDailyData.slice(-trendDays) : allDailyData;
+      renderTrendChart(slice);
+      // update range button styles
+      document.querySelectorAll(".trend-range-btn").forEach(function (btn) {
+        var active = parseInt(btn.getAttribute("data-days"), 10) === trendDays;
+        btn.className = "trend-range-btn px-3 py-1 rounded-md text-xs font-medium " +
+          (active ? "bg-primary text-white" : "bg-slate-700 hover:bg-slate-600 text-slate-300");
+      });
+    }
+
+    function loadDailyStats(model) {
+      var subEl = document.getElementById("trendChartSubtitle");
+      if (subEl) subEl.textContent = "仅当前选中型号" + (model ? "（" + model + "）" : "") + "：当日最低价、平均价、最高价及本型号各条商品价格";
+      fetch("/api/daily-stats/?keyword=" + encodeURIComponent(model)).then(function (r) { return r.json(); }).then(function (data) {
+        allDailyData = data.daily || [];
+        if (!allDailyData.length) {
+          if (trendChart) { trendChart.destroy(); trendChart = null; }
+          trendChartEl.parentElement.style.display = "none";
+          trendEmpty.classList.remove("hidden");
+          return;
+        }
+        applyTrendRange();
+        var last = allDailyData[allDailyData.length - 1];
+        cardCount.textContent = last.all_prices ? last.all_prices.length : "--";
+        if (allDailyData.length >= 2) {
+          var prev = allDailyData[allDailyData.length - 2];
+          var diff = last.avg_price - prev.avg_price;
+          var pct = prev.avg_price ? (diff / prev.avg_price * 100).toFixed(1) : "0.0";
+          var arrow = diff > 0 ? "↑" : diff < 0 ? "↓" : "→";
+          var pctSign = diff > 0 ? "+" : diff < 0 ? "-" : "";
+          cardChange.innerHTML = arrow + " ¥" + Math.abs(diff).toLocaleString() +
+            "<span class=\"text-lg ml-1 opacity-75\">(" + pctSign + Math.abs(pct) + "%)</span>";
+          cardChange.className = "text-3xl font-bold " + (diff > 0 ? "text-red-400" : diff < 0 ? "text-emerald-400" : "text-slate-400");
+        } else {
+          cardChange.textContent = "--";
+          cardChange.className = "text-3xl font-bold text-slate-400";
+        }
+      });
+    }
+
+    function buildHistogramBins(records, step) {
+      var STEP = Math.max(1, parseInt(step, 10) || 500);
+      var priceList = records.map(function (r) { return r.price; });
+      if (!priceList.length) return { labels: [], counts: [], binPrices: [] };
+      var minP = Math.min.apply(null, priceList), maxP = Math.max.apply(null, priceList);
+      var low = Math.floor(minP / STEP) * STEP, high = Math.ceil(maxP / STEP) * STEP;
+      var labels = [], counts = [], binPrices = [];
+      while (low <= high) {
+        labels.push("¥" + low.toLocaleString());
+        var inBin = priceList.filter(function (p) { return p >= low && p < low + STEP; });
+        counts.push(inBin.length);
+        binPrices.push(inBin.slice().sort(function (a, b) { return a - b; }));
+        low += STEP;
+      }
+      return { labels: labels, counts: counts, binPrices: binPrices };
+    }
+
+    function renderDistChart(dateStr, prices) {
+      if (distChart) distChart.destroy();
+      var model = modelSelect.value;
+      var filtered = (prices || []).filter(function (r) { return r.keyword_name === model; });
+      if (!dateStr || !model || !filtered.length) {
+        distChartEl.parentElement.classList.add("hidden");
+        distEmpty.classList.remove("hidden");
+        distDateLabel.textContent = "";
+        return;
+      }
+      distChartEl.parentElement.style.display = "block";
+      distEmpty.classList.add("hidden");
+      distDateLabel.textContent = dateStr + " · " + model + " 共 " + filtered.length + " 条";
+      var step = distStep.value;
+      var hist = buildHistogramBins(filtered, step);
+      distChartBinPrices = hist.binPrices;
+      distChart = new Chart(distChartEl, {
+        type: "bar",
+        data: { labels: hist.labels, datasets: [{ label: "数量", data: hist.counts, backgroundColor: "rgba(59, 130, 246, 0.6)", borderColor: "#3b82f6" }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: function (ctx) { var p = distChartBinPrices[ctx.dataIndex]; return p && p.length ? "各记录: " + p.map(function (x) { return "¥" + x.toLocaleString(); }).join(", ") : ""; } } } },
+          scales: { x: { title: { display: true, text: "价格区间 (JPY)" } }, y: { beginAtZero: true, title: { display: true, text: "数量" } } }
+        }
+      });
+      cardCount.textContent = filtered.length;
+    }
+
+    function renderPricesTable(prices) {
+      var model = modelSelect.value;
+      var rows = (prices || []).filter(function (r) { return r.keyword_name === model; });
+      if (!rows.length) {
+        pricesTableBody.innerHTML = "";
+        pricesEmpty.classList.remove("hidden");
+        return;
+      }
+      rows = rows.slice().sort(function (a, b) {
+        return priceSortOrder === "asc" ? a.price - b.price : b.price - a.price;
+      });
+      pricesEmpty.classList.add("hidden");
+      pricesTableBody.innerHTML = rows.map(function (r) {
+        var url = (r.url || "#").replace(/"/g, "&quot;");
+        var name = (r.product_name || "").replace(/</g, "&lt;").replace(/>/g, "&gt;").slice(0, 60);
+        return "<tr class=\"hover:bg-slate-700/30\"><td class=\"px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm\" title=\"" + name + "\">" + name + "</td><td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right font-medium text-sm whitespace-nowrap\">¥" + Number(r.price).toLocaleString() + "</td><td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right\"><a class=\"text-primary hover:underline text-sm\" href=\"" + url + "\" target=\"_blank\" rel=\"noopener\">去看看</a></td></tr>";
+      }).join("");
+      updatePriceSortButtons();
+    }
+
+    function updatePriceSortButtons() {
+      var ascBtn = document.getElementById("priceSortAsc");
+      var descBtn = document.getElementById("priceSortDesc");
+      if (!ascBtn || !descBtn) return;
+      if (priceSortOrder === "asc") {
+        ascBtn.classList.add("bg-primary", "text-white");
+        ascBtn.classList.remove("bg-slate-700", "text-slate-300");
+        descBtn.classList.remove("bg-primary", "text-white");
+        descBtn.classList.add("bg-slate-700", "text-slate-300");
+      } else {
+        descBtn.classList.add("bg-primary", "text-white");
+        descBtn.classList.remove("bg-slate-700", "text-slate-300");
+        ascBtn.classList.remove("bg-primary", "text-white");
+        ascBtn.classList.add("bg-slate-700", "text-slate-300");
+      }
+    }
+
+    function loadDailyPrices() {
+      var dateStr = distDate.value;
+      var currentModel = modelSelect.value;
+      if (!dateStr) {
+        renderDistChart(null, []);
+        renderPricesTable([]);
+        return;
+      }
+      fetch("/api/daily-prices/?date=" + encodeURIComponent(dateStr)).then(function (r) { return r.json(); }).then(function (data) {
+        lastDayPrices = data.prices || [];
+        // Only update chart/table if user has not changed model or date since request (avoid showing wrong model)
+        if (modelSelect.value === currentModel && distDate.value === dateStr) {
+          renderDistChart(dateStr, lastDayPrices);
+          renderPricesTable(lastDayPrices);
+        }
+      });
+    }
+
+    async function loadDashboard() {
+      var res = await fetch("/api/dashboard-stats/?category=" + encodeURIComponent(currentCategory || "gpu"));
+      var data = await res.json();
+      allSummary = data.summary || [];
+      allKeywords = sortKeywords(data.keywords || []);
+      dates = data.dates || [];
+      setCategoryNavActive(currentCategory);
+
+      modelSelect.innerHTML = "<option value=\"\">全部（总体概览）</option>";
+      allKeywords.forEach(function (kw) {
+        var opt = document.createElement("option");
+        opt.value = kw.name;
+        opt.textContent = kw.name;
+        modelSelect.appendChild(opt);
+      });
+
+      distDate.innerHTML = "<option value=\"\">-- 选择日期 --</option>";
+      dates.forEach(function (d) {
+        var opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        distDate.appendChild(opt);
+      });
+      if (dates.length) distDate.value = dates[0];
+
+      var keywordCheckList = document.getElementById("keywordCheckList");
+      keywordCheckList.innerHTML = "";
+      allKeywords.forEach(function (kw) {
+        var label = document.createElement("label");
+        label.className = "flex items-center gap-2 px-2 py-0.5 cursor-pointer text-sm";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "kw-cb rounded";
+        cb.value = kw.name;
+        cb.checked = true;
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(kw.name));
+        keywordCheckList.appendChild(label);
+      });
+      document.getElementById("selectAllKeywords").onclick = function () {
+        var checked = this.checked;
+        keywordCheckList.querySelectorAll(".kw-cb").forEach(function (c) { c.checked = checked; });
+      };
+
+      modelSelect.addEventListener("change", switchView);
+      distStep.addEventListener("change", function () { if (modelSelect.value && distDate.value) renderDistChart(distDate.value, lastDayPrices); });
+
+      document.querySelectorAll(".trend-range-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          trendDays = parseInt(btn.getAttribute("data-days"), 10);
+          applyTrendRange();
+        });
+      });
+
+      document.getElementById("priceSortAsc").addEventListener("click", function () {
+        priceSortOrder = "asc";
+        renderPricesTable(lastDayPrices);
+      });
+      document.getElementById("priceSortDesc").addEventListener("click", function () {
+        priceSortOrder = "desc";
+        renderPricesTable(lastDayPrices);
+      });
+
+      switchView();
+    }
+
+    // Sidebar toggle for mobile
+    function toggleSidebar() {
+      var sidebar = document.getElementById("sidebar");
+      var overlay = document.getElementById("sidebarOverlay");
+      var isHidden = sidebar.classList.contains("-translate-x-full");
+      if (isHidden) {
+        sidebar.classList.remove("-translate-x-full");
+        overlay.classList.remove("hidden");
+      } else {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+      }
+    }
+    function closeSidebar() {
+      var sidebar = document.getElementById("sidebar");
+      var overlay = document.getElementById("sidebarOverlay");
+      sidebar.classList.add("-translate-x-full");
+      overlay.classList.add("hidden");
+    }
+
+    // Bind category nav once on page load (so CPU/RAM/SSD/主板 are clickable even before first API response)
+    document.querySelectorAll(".nav-category").forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        var cat = a.getAttribute("data-category");
+        if (cat) { currentCategory = cat; setCategoryNavActive(cat); loadDashboard(); }
+        closeSidebar();  // close on mobile after selecting a category
+      });
+    });
+
+    document.getElementById("seedKeywordsBtn").addEventListener("click", async function () {
+      var btn = this;
+      btn.disabled = true;
+      try {
+        var url = currentCategory === "gpu" ? "/api/seed-gpu-keywords/" : "/api/seed-other-hardware-keywords/";
+        var body = currentCategory === "gpu" ? "{}" : JSON.stringify({ category: currentCategory });
+        var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: body });
+        var d = await r.json().catch(function () { return {}; });
+        if (d.ok) loadDashboard();
+        else if (d.error) console.warn(d.error);
+      } finally { btn.disabled = false; }
+    });
+
+    var progressTimer = null;
+    function startCollect(keywordList) {
+      var collectBtn = document.getElementById("collectBtn");
+      var collectAllBtn = document.getElementById("collectAllBtn");
+      var collectStatus = document.getElementById("collectStatus");
+      collectBtn.disabled = true;
+      collectAllBtn.disabled = true;
+      collectStatus.textContent = "启动中…";
+      collectStatus.className = "text-xs text-slate-500 mt-2 truncate";
+      collectStatus.title = "";
+      var body = keywordList ? JSON.stringify({ keywords: keywordList }) : "{}";
+      fetch("/api/run-collect-daily-prices/", { method: "POST", headers: { "Content-Type": "application/json" }, body: body })
+        .then(function (res) { return res.json().catch(function () { return {}; }); })
+        .then(function (data) {
+          if (!data.ok) {
+            collectStatus.textContent = "失败: " + (data.error || "unknown");
+            collectStatus.className = "text-xs text-red-400 mt-2 truncate";
+            collectBtn.disabled = false; collectAllBtn.disabled = false;
+            return;
+          }
+          progressTimer = setInterval(async function () {
+            try {
+              var pr = await fetch("/api/collect-progress/");
+              var p = await pr.json();
+              if (p.running) {
+                collectStatus.textContent = "采集中 " + (p.current || 0) + "/" + (p.total || 0) + (p.keyword ? " · " + p.keyword : "");
+              } else {
+                clearInterval(progressTimer);
+                progressTimer = null;
+                if (p.skipped && p.skipped.length) {
+                  var errCount = 0, emptyCount = 0;
+                  p.skipped.forEach(function (s) {
+                    if (s.error && s.error.indexOf("0 results") !== -1) emptyCount++;
+                    else errCount++;
+                  });
+                  var msg = "采集完成。跳过 " + p.skipped.length + " 个";
+                  if (emptyCount) msg += "（无结果: " + emptyCount + "）";
+                  if (errCount) msg += "（报错: " + errCount + "）";
+                  collectStatus.textContent = msg;
+                  collectStatus.title = p.skipped.map(function (s) { return s.keyword + ": " + s.error; }).join("\n");
+                  collectStatus.className = "text-xs text-yellow-500 mt-2 cursor-help";
+                } else {
+                  collectStatus.textContent = "采集完成";
+                  collectStatus.className = "text-xs text-emerald-500 mt-2";
+                }
+                collectBtn.disabled = false; collectAllBtn.disabled = false;
+                loadDashboard();
+              }
+            } catch (e) {
+              collectStatus.textContent = "进度请求失败";
+              collectStatus.className = "text-xs text-red-400 mt-2 truncate";
+              collectBtn.disabled = false; collectAllBtn.disabled = false;
+            }
+          }, 1000);
+        }).catch(function (e) {
+          collectStatus.textContent = "请求失败: " + e.message;
+          collectStatus.className = "text-xs text-red-400 mt-2 truncate";
+          collectBtn.disabled = false; collectAllBtn.disabled = false;
+        });
+    }
+
+    document.getElementById("collectBtn").addEventListener("click", function () {
+      var checked = [];
+      document.querySelectorAll(".kw-cb:checked").forEach(function (c) { checked.push(c.value); });
+      if (!checked.length) {
+        document.getElementById("collectStatus").textContent = "请至少勾选一个关键词";
+        document.getElementById("collectStatus").className = "text-xs text-red-400 mt-2 truncate";
+        return;
+      }
+      startCollect(checked);
+    });
+
+    document.getElementById("collectAllBtn").addEventListener("click", function () {
+      startCollect(null);
+    });
+
+    loadDashboard();
+  </script>
+</body>
+</html>

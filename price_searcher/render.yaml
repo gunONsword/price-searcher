@@ -1,0 +1,32 @@
+# Render Blueprint: Web Service + PostgreSQL
+# https://render.com/docs/blueprint-spec
+# Connect your repo and add this blueprint, or create services manually with the same settings.
+
+services:
+  - type: web
+    name: price-searcher
+    runtime: python
+    # Use the directory that contains manage.py and requirements.txt (Django app)
+    rootDir: price_searcher
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn price_searcher.wsgi:application
+    releaseCommand: python manage.py migrate --noinput
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: price-searcher-db
+          property: connectionString
+      - key: RAKUTEN_APP_ID
+        sync: false
+
+databases:
+  - name: price-searcher-db
+    plan: free
+    databaseName: price_searcher
+    user: price_searcher

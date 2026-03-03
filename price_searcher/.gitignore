@@ -1,0 +1,45 @@
+# Environment and secrets (do not upload)
+.env
+.env.local
+.env.*.local
+
+# Database
+db.sqlite3
+*.sqlite3
+# Data dump used for migration (may contain data)
+data.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+.eggs/
+*.egg-info/
+*.egg
+
+# Django
+staticfiles/
+media/
+*.log
+local_settings.py
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / dist
+dist/
+build/
+*.manifest
