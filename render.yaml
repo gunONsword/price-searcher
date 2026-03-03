@@ -6,11 +6,11 @@ services:
   - type: web
     name: price-searcher
     runtime: python
-    # price_searcher/ contains manage.py and requirements.txt
-    rootDir: price_searcher
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: gunicorn price_searcher.wsgi:application
-    releaseCommand: python manage.py migrate --noinput
+    # No rootDir: run from git root, reference price_searcher/ explicitly
+    # This ensures gunicorn is installed in the standard venv location and found at startup
+    buildCommand: pip install -r price_searcher/requirements.txt && python price_searcher/manage.py collectstatic --noinput
+    startCommand: gunicorn --chdir price_searcher price_searcher.wsgi:application --bind 0.0.0.0:$PORT
+    releaseCommand: python price_searcher/manage.py migrate --noinput
     envVars:
       - key: DJANGO_SECRET_KEY
         generateValue: true
