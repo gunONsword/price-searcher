@@ -529,9 +529,7 @@
           "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-slate-400 text-sm hidden sm:table-cell\">" + date + "</td>" +
           "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm\">" + price + "</td>" +
           "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right text-sm\">" + changeHtml + "</td>" +
-          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right whitespace-nowrap\">" +
-          "<button class=\"overview-collect-btn inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-xs font-medium border border-emerald-500/30 rounded-md px-2 py-1 hover:bg-emerald-500/10 mr-2 transition-colors\" data-kw=\"" + name + "\" onclick=\"event.stopPropagation();quickCollect(this)\">▶ 采集</button>" +
-          "<span class=\"inline-block text-primary text-xs font-medium border border-primary/40 rounded px-2 py-0.5 hover:bg-primary/10 cursor-pointer\">详情</span></td></tr>";
+          "<td class=\"px-3 sm:px-6 py-3 sm:py-4 text-right\"><span class=\"inline-block text-primary text-xs font-medium border border-primary/40 rounded px-2 py-0.5 hover:bg-primary/10 cursor-pointer\">详情</span></td></tr>";
       }).join("");
       overviewTableBody.innerHTML = rows;
       overviewTableBody.querySelectorAll("tr").forEach(function (tr) {
@@ -774,61 +772,7 @@
     });
 
 
-    // ─── Quick collect (single keyword from overview table) ───────────────────
-    var _quickCollectTimer = null;
-    function quickCollect(btn) {
-      if (btn.disabled) return;
-      var kwName = btn.getAttribute("data-kw");
-      if (!kwName) return;
-
-      var BASE_CLS = "overview-collect-btn inline-flex items-center gap-1 text-xs font-medium border rounded-md px-2 py-1 transition-colors mr-2 ";
-      btn.disabled = true;
-      btn.innerHTML = "<svg class=\"w-3 h-3 animate-spin\" fill=\"none\" viewBox=\"0 0 24 24\"><circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"/><path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8v8z\"/></svg> 采集中";
-      btn.className = BASE_CLS + "text-slate-400 border-slate-600 cursor-not-allowed";
-
-      fetch("/api/run-collect-daily-prices/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keywords: [kwName] })
-      }).then(function(r) { return r.json(); }).then(function(data) {
-        if (!data.ok) {
-          // Another collect may already be running
-          btn.innerHTML = "⚠ " + (data.error || "失败");
-          btn.className = BASE_CLS + "text-yellow-400 border-yellow-500/30";
-          setTimeout(function() { _resetQuickBtn(btn); }, 2500);
-          return;
-        }
-        if (_quickCollectTimer) clearInterval(_quickCollectTimer);
-        _quickCollectTimer = setInterval(function() {
-          fetch("/api/collect-progress/").then(function(r) { return r.json(); }).then(function(p) {
-            if (!p.running) {
-              clearInterval(_quickCollectTimer); _quickCollectTimer = null;
-              var skipped = p.skipped && p.skipped.find(function(s) { return s.keyword === kwName; });
-              if (skipped) {
-                btn.innerHTML = "✗ 无数据";
-                btn.className = BASE_CLS + "text-red-400 border-red-500/30";
-              } else {
-                btn.innerHTML = "✓ 完成";
-                btn.className = BASE_CLS + "text-emerald-400 border-emerald-500/30";
-                loadDashboard();
-              }
-              setTimeout(function() { _resetQuickBtn(btn); }, 2000);
-            }
-          }).catch(function() { clearInterval(_quickCollectTimer); _quickCollectTimer = null; _resetQuickBtn(btn); });
-        }, 900);
-      }).catch(function(e) {
-        btn.innerHTML = "✗ 错误";
-        btn.className = BASE_CLS + "text-red-400 border-red-500/30";
-        setTimeout(function() { _resetQuickBtn(btn); }, 2500);
-      });
-    }
-    function _resetQuickBtn(btn) {
-      btn.disabled = false;
-      btn.innerHTML = "▶ 采集";
-      btn.className = "overview-collect-btn inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 text-xs font-medium border border-emerald-500/30 rounded-md px-2 py-1 hover:bg-emerald-500/10 mr-2 transition-colors";
-    }
-
-    // ─── Collect ──────────────────────────────────────────────────────────────
+// ─── Collect ──────────────────────────────────────────────────────────────
     var progressTimer = null;
     function startCollect(keywordList) {
       var collectBtn = document.getElementById("collectBtn");
