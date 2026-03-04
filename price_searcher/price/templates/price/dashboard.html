@@ -248,8 +248,19 @@
           <input type="text" id="manageSearch" placeholder="搜索关键词..." class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:outline-none"/>
         </div>
 
-        <!-- Keyword table -->
-        <div class="bg-slate-800/50 rounded-xl border border-slate-800 overflow-hidden">
+        <!-- Loading / empty states (shared) -->
+        <div id="manageLoading" class="p-10 text-center text-slate-500 text-sm">
+          <svg class="animate-spin w-6 h-6 mx-auto mb-3 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          加载中...
+        </div>
+        <div id="manageEmpty" class="p-10 text-center text-slate-500 text-sm hidden">
+          <p class="text-3xl mb-3">🔍</p>
+          <p>暂无关键词</p>
+          <p class="text-xs mt-1 text-slate-600">点击右上角「添加关键词」来创建第一个</p>
+        </div>
+
+        <!-- Desktop table (md and above) -->
+        <div class="hidden md:block bg-slate-800/50 rounded-xl border border-slate-800 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead>
@@ -263,16 +274,10 @@
               <tbody id="manageTableBody" class="divide-y divide-slate-800"></tbody>
             </table>
           </div>
-          <div id="manageLoading" class="p-10 text-center text-slate-500 text-sm">
-            <svg class="animate-spin w-6 h-6 mx-auto mb-3 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-            加载中...
-          </div>
-          <div id="manageEmpty" class="p-10 text-center text-slate-500 text-sm hidden">
-            <p class="text-3xl mb-3">🔍</p>
-            <p>暂无关键词</p>
-            <p class="text-xs mt-1 text-slate-600">点击右上角「添加关键词」来创建第一个</p>
-          </div>
         </div>
+
+        <!-- Mobile card list (below md) — swipe left to reveal delete -->
+        <div id="manageCardList" class="md:hidden space-y-2"></div>
 
         <!-- Keyword count badge -->
         <p id="manageCount" class="text-xs text-slate-600 text-right hidden"></p>
@@ -923,6 +928,7 @@
       document.getElementById("manageLoading").classList.remove("hidden");
       document.getElementById("manageEmpty").classList.add("hidden");
       document.getElementById("manageTableBody").innerHTML = "";
+      document.getElementById("manageCardList").innerHTML = "";
       document.getElementById("manageCount").classList.add("hidden");
       try {
         var res = await fetch("/api/keywords-manage/");
@@ -959,6 +965,7 @@
 
       if (!filtered.length) {
         tbody.innerHTML = "";
+        document.getElementById("manageCardList").innerHTML = "";
         document.getElementById("manageEmpty").classList.remove("hidden"); return;
       }
       document.getElementById("manageEmpty").classList.add("hidden");
@@ -977,6 +984,89 @@
           "<button class=\"text-red-400 hover:text-red-300 text-xs font-medium transition-colors\" onclick='confirmDeleteKeyword(" + kw.id + ", " + JSON.stringify(kw.name) + ")'>删除</button>" +
           "</td></tr>";
       }).join("");
+
+      renderManageCards(filtered);
+    }
+
+    // ─── Mobile swipe cards ───────────────────────────────────────────────────
+    function renderManageCards(filtered) {
+      var list = document.getElementById("manageCardList");
+      list.innerHTML = "";
+      filtered.forEach(function (kw) {
+        var catLabel = CAT_LABELS[kw.category] || kw.category;
+        var catClass = CAT_COLORS[kw.category] || "text-slate-400 bg-slate-400/10";
+        var minPrice = kw.min_price != null ? "¥" + Number(kw.min_price).toLocaleString() : "--";
+
+        var card = document.createElement("div");
+        card.className = "swipe-card relative overflow-hidden rounded-xl bg-slate-900 border border-slate-800";
+        card.innerHTML =
+          "<div class=\"delete-panel absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center\">" +
+            "<button onclick='confirmDeleteKeyword(" + kw.id + ", " + JSON.stringify(kw.name) + ")' class=\"text-white font-bold text-sm px-2\">删除</button>" +
+          "</div>" +
+          "<div class=\"card-content relative flex items-center gap-3 px-4 py-3.5 bg-slate-900\" style=\"will-change:transform;transition:transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)\">" +
+            "<div class=\"flex-1 min-w-0\">" +
+              "<p class=\"font-medium text-sm truncate text-slate-100\">" + escHtml(kw.name) + "</p>" +
+              "<div class=\"flex items-center gap-2 mt-1\">" +
+                "<span class=\"inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full " + catClass + "\">" + catLabel + "</span>" +
+                "<span class=\"text-xs text-slate-400 tabular-nums\">" + minPrice + "</span>" +
+              "</div>" +
+            "</div>" +
+            "<button onclick='openEditModal(" + JSON.stringify(kw).replace(/'/g, "&#39;") + ")' class=\"flex-shrink-0 text-primary text-sm font-medium px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors\">编辑</button>" +
+          "</div>";
+
+        list.appendChild(card);
+        initCardSwipe(card);
+      });
+    }
+
+    function initCardSwipe(card) {
+      var content = card.querySelector(".card-content");
+      var DELETE_W = 80; // px — width of delete panel
+      var startX = 0, startY = 0, isDragging = false, isOpen = false, curTx = 0;
+
+      function getTargetTx() { return isOpen ? -DELETE_W : 0; }
+
+      function snapCard(open) {
+        isOpen = open;
+        curTx = open ? -DELETE_W : 0;
+        content.style.transition = "transform 0.25s cubic-bezier(0.25,0.46,0.45,0.94)";
+        content.style.transform = "translateX(" + curTx + "px)";
+      }
+
+      content.addEventListener("touchstart", function (e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        isDragging = false;
+        content.style.transition = "none";
+      }, { passive: true });
+
+      content.addEventListener("touchmove", function (e) {
+        var dx = e.touches[0].clientX - startX;
+        var dy = Math.abs(e.touches[0].clientY - startY);
+        if (!isDragging && dy > Math.abs(dx)) return; // vertical scroll wins
+        isDragging = true;
+        // clamp: can't swipe right past 0 when closed, can't swipe left past DELETE_W
+        var base = isOpen ? -DELETE_W : 0;
+        var tx = Math.min(0, Math.max(-DELETE_W, base + dx));
+        curTx = tx;
+        content.style.transform = "translateX(" + tx + "px)";
+      }, { passive: true });
+
+      content.addEventListener("touchend", function (e) {
+        if (!isDragging) return;
+        var dx = e.changedTouches[0].clientX - startX;
+        if (isOpen) {
+          snapCard(dx < 20); // if swiped right enough, close
+        } else {
+          snapCard(dx < -30); // if swiped left enough, open
+        }
+        isDragging = false;
+      }, { passive: true });
+
+      // Tap outside open card to close it
+      document.addEventListener("touchstart", function (e) {
+        if (isOpen && !card.contains(e.target)) { snapCard(false); }
+      }, { passive: true });
     }
 
     function escHtml(str) {
