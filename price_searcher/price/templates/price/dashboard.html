@@ -67,13 +67,6 @@
         </label>
       </div>
       <div id="keywordCheckList" class="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 min-h-0"></div>
-      <div class="flex-shrink-0 pt-2" id="seedBtnWrapper">
-        <button type="button" id="seedKeywordsBtn" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-300 text-xs transition-colors">+ 添加当前类别预设关键词</button>
-      </div>
-      <div id="seedCustomMsg" class="hidden flex-shrink-0 pt-2 px-1">
-        <p class="text-xs text-slate-500">自定义类别暂无预设关键词。</p>
-        <button type="button" id="goManageFromSeedBtn" class="text-xs text-primary hover:underline mt-1">前往关键词管理页面添加 →</button>
-      </div>
     </div>
     <div class="p-4 border-t border-slate-800" id="collectBtnArea">
       <button type="button" id="collectBtn" class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-4 rounded-lg transition-all">
@@ -399,7 +392,6 @@
       document.getElementById("modelSelectWrapper").classList.remove("hidden");
       document.getElementById("sidebarBottomArea").classList.remove("hidden");
       document.getElementById("collectBtnArea").classList.remove("hidden");
-      updateSeedBtn();
       updateBackBtn();
     }
 
@@ -434,17 +426,6 @@
       }
     }
 
-    function updateSeedBtn() {
-      var seedWrapper = document.getElementById("seedBtnWrapper");
-      var seedMsg = document.getElementById("seedCustomMsg");
-      if (currentCategory === "custom") {
-        seedWrapper.classList.add("hidden");
-        seedMsg.classList.remove("hidden");
-      } else {
-        seedWrapper.classList.remove("hidden");
-        seedMsg.classList.add("hidden");
-      }
-    }
 
     // ─── Sort keywords ────────────────────────────────────────────────────────
     function sortKeywords(keywords) {
@@ -792,26 +773,6 @@
       closeSidebar();
     });
 
-    // ─── "Go to manage" from custom seed msg ─────────────────────────────────
-    document.getElementById("goManageFromSeedBtn").addEventListener("click", function () {
-      setManageNavActive();
-      showManageView();
-      closeSidebar();
-    });
-
-    // ─── Seed keywords ────────────────────────────────────────────────────────
-    document.getElementById("seedKeywordsBtn").addEventListener("click", async function () {
-      var btn = this;
-      btn.disabled = true;
-      try {
-        var url = currentCategory === "gpu" ? "/api/seed-gpu-keywords/" : "/api/seed-other-hardware-keywords/";
-        var body = currentCategory === "gpu" ? "{}" : JSON.stringify({ category: currentCategory });
-        var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: body });
-        var d = await r.json().catch(function () { return {}; });
-        if (d.ok) loadDashboard();
-        else if (d.error) console.warn(d.error);
-      } finally { btn.disabled = false; }
-    });
 
     // ─── Quick collect (single keyword from overview table) ───────────────────
     var _quickCollectTimer = null;
