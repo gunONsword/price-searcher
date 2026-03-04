@@ -23,8 +23,9 @@
 
   <!-- Sidebar -->
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 border-r border-slate-800 flex flex-col h-screen bg-slate-950 transition-transform duration-300 -translate-x-full md:translate-x-0 md:sticky md:top-0 md:z-auto">
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-8">
+    <!-- Header -->
+    <div class="p-5 pb-3 flex-shrink-0">
+      <div class="flex items-center justify-between mb-5">
         <div class="flex items-center gap-3 text-primary">
           <span class="text-2xl">📊</span>
           <h1 class="text-xl font-bold tracking-tight">硬件监控中心</h1>
@@ -33,29 +34,43 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
-      <nav class="space-y-1" id="categoryNav">
-        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-semibold cursor-pointer" href="#" data-category="gpu"><span>🎮</span><span>显卡 (GPU)</span></a>
-        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="cpu"><span>🔲</span><span>处理器 (CPU)</span></a>
-        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="ram"><span>📦</span><span>内存 (RAM)</span></a>
-        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="ssd"><span>💾</span><span>固态硬盘 (SSD)</span></a>
-        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="motherboard"><span>🔧</span><span>主板</span></a>
-        <a class="nav-category flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#" data-category="custom"><span>🎯</span><span>自定义</span></a>
-      </nav>
-      <!-- Manage nav -->
+      <!-- Category dropdown -->
+      <p class="text-slate-500 text-xs font-medium mb-1.5 px-0.5">硬件类别</p>
+      <div class="relative">
+        <select id="categorySelect" class="w-full appearance-none bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-9 text-sm text-slate-100 cursor-pointer focus:ring-2 focus:ring-primary focus:outline-none transition-colors hover:border-slate-600">
+          <option value="gpu">🎮 显卡 (GPU)</option>
+          <option value="cpu">🔲 处理器 (CPU)</option>
+          <option value="ram">📦 内存 (RAM)</option>
+          <option value="ssd">💾 固态硬盘 (SSD)</option>
+          <option value="motherboard">🔧 主板</option>
+          <option value="custom">🎯 自定义</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <!-- Manage link -->
       <div class="mt-2 pt-2 border-t border-slate-700/50">
-        <a id="manageNavBtn" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer" href="#">
-          <span>⚙</span><span>关键词管理</span>
+        <a id="manageNavBtn" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-slate-200 cursor-pointer text-sm transition-colors" href="#">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
+          <span>关键词管理</span>
         </a>
       </div>
     </div>
-    <div class="px-4 flex-1 overflow-y-auto custom-scrollbar" id="sidebarBottomArea">
-      <p class="text-slate-500 text-xs font-medium mb-2 px-2">采集关键词（勾选参与采集）</p>
-      <label class="flex items-center gap-2 px-2 py-1 cursor-pointer text-sm"><input type="checkbox" id="selectAllKeywords" class="rounded"/> 全选</label>
-      <div id="keywordCheckList" class="max-h-40 overflow-y-auto space-y-0.5 py-2"></div>
-      <div id="seedBtnWrapper">
-        <button type="button" id="seedKeywordsBtn" class="w-full mt-2 py-2 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm">添加当前类别预设关键词</button>
+
+    <!-- Keyword checklist — flex-1 fills all remaining space -->
+    <div class="flex flex-col flex-1 min-h-0 px-4 pb-2" id="sidebarBottomArea">
+      <div class="flex items-center justify-between mb-2 px-1 flex-shrink-0">
+        <p class="text-slate-500 text-xs font-medium">采集关键词</p>
+        <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400 hover:text-slate-200 select-none">
+          <input type="checkbox" id="selectAllKeywords" class="rounded w-3.5 h-3.5 accent-primary"/> 全选
+        </label>
       </div>
-      <div id="seedCustomMsg" class="hidden mt-2 px-2">
+      <div id="keywordCheckList" class="flex-1 overflow-y-auto custom-scrollbar space-y-0.5 min-h-0"></div>
+      <div class="flex-shrink-0 pt-2" id="seedBtnWrapper">
+        <button type="button" id="seedKeywordsBtn" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-300 text-xs transition-colors">+ 添加当前类别预设关键词</button>
+      </div>
+      <div id="seedCustomMsg" class="hidden flex-shrink-0 pt-2 px-1">
         <p class="text-xs text-slate-500">自定义类别暂无预设关键词。</p>
         <button type="button" id="goManageFromSeedBtn" class="text-xs text-primary hover:underline mt-1">前往关键词管理页面添加 →</button>
       </div>
@@ -360,16 +375,8 @@
     function setCategoryNavActive(cat) {
       currentCategory = cat || "gpu";
       currentView = "category";
-      document.querySelectorAll(".nav-category").forEach(function (a) {
-        var isActive = a.getAttribute("data-category") === currentCategory;
-        a.classList.toggle("bg-primary/10", isActive);
-        a.classList.toggle("text-primary", isActive);
-        a.classList.toggle("font-semibold", isActive);
-        a.classList.toggle("text-slate-400", !isActive);
-        a.classList.toggle("hover:bg-slate-800", !isActive);
-        a.classList.toggle("hover:text-slate-200", !isActive);
-      });
-      // Deactivate manage button
+      var sel = document.getElementById("categorySelect");
+      if (sel) sel.value = currentCategory;
       var mb = document.getElementById("manageNavBtn");
       mb.classList.remove("bg-primary/10", "text-primary", "font-semibold");
       mb.classList.add("text-slate-400");
@@ -377,10 +384,6 @@
 
     function setManageNavActive() {
       currentView = "manage";
-      document.querySelectorAll(".nav-category").forEach(function (a) {
-        a.classList.remove("bg-primary/10", "text-primary", "font-semibold");
-        a.classList.add("text-slate-400");
-      });
       var mb = document.getElementById("manageNavBtn");
       mb.classList.add("bg-primary/10", "text-primary", "font-semibold");
       mb.classList.remove("text-slate-400");
@@ -731,9 +734,9 @@
       keywordCheckList.innerHTML = "";
       allKeywords.forEach(function (kw) {
         var label = document.createElement("label");
-        label.className = "flex items-center gap-2 px-2 py-0.5 cursor-pointer text-sm";
+        label.className = "flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer text-sm hover:bg-slate-800/60 transition-colors select-none";
         var cb = document.createElement("input");
-        cb.type = "checkbox"; cb.className = "kw-cb rounded";
+        cb.type = "checkbox"; cb.className = "kw-cb rounded w-3.5 h-3.5 accent-primary flex-shrink-0";
         cb.value = kw.name; cb.checked = true;
         label.appendChild(cb);
         label.appendChild(document.createTextNode(kw.name));
@@ -747,19 +750,13 @@
       switchView();
     }
 
-    // ─── Category nav clicks ──────────────────────────────────────────────────
-    document.querySelectorAll(".nav-category").forEach(function (a) {
-      a.addEventListener("click", function (e) {
-        e.preventDefault();
-        var cat = a.getAttribute("data-category");
-        if (cat) {
-          currentCategory = cat;
-          modelSelect.value = "";
-          setCategoryNavActive(cat);
-          loadDashboard();
-        }
-        closeSidebar();
-      });
+    // ─── Category dropdown ────────────────────────────────────────────────────
+    document.getElementById("categorySelect").addEventListener("change", function () {
+      currentCategory = this.value;
+      modelSelect.value = "";
+      setCategoryNavActive(currentCategory);
+      loadDashboard();
+      closeSidebar();
     });
 
     // ─── Manage nav click ─────────────────────────────────────────────────────
