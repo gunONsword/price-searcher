@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .models import DailyPriceSnapshot, Keyword
+from .models import DailyPriceSnapshot, DailyPriceSummary, Keyword
 from .services.daily_stats import (
     get_daily_stats,
     get_all_daily_summary,
@@ -137,7 +137,7 @@ def daily_stats_api(request):
 def dashboard_stats_api(request):
     """All keywords × dates: low, high, avg, min_price_url; plus available dates. Optional ?category=gpu|cpu|ram|ssd|motherboard."""
     category = (request.GET.get("category") or "").strip().lower() or None
-    if category and category not in ("gpu", "cpu", "ram", "ssd", "motherboard"):
+    if category and category not in ("gpu", "cpu", "ram", "ssd", "motherboard", "custom"):
         category = None
     summary = get_all_daily_summary(category=category)
     keywords = get_keywords_with_summary(category=category)
@@ -239,6 +239,70 @@ def run_collect_daily_prices_api(request):
 def dashboard(request):
     """Visualization: daily price trends (all GPUs) and table of min/max/avg per GPU per day."""
     return render(request, "price/dashboard.html")
+
+
+@api_view(["GET", "POST"])
+def keywords_manage_api(request):
+    """GET: list all keywords. POST: create a new keyword."""
+    if request.method == "GET":
+        keywords = Keyword.objects.all().order_by("category", "name")
+        data = [
+            {"id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price}
+            for kw in keywords
+        ]
+        return Response(data)
+
+    # POST — create
+    name = (request.data.get("name") or "").strip()
+    category = (request.data.get("category") or Keyword.CATEGORY_CUSTOM).strip().lower()
+    min_price = request.data.get("min_price", 20000)
+    if not name:
+        return Response({"ok": False, "error": "name is required"}, status=400)
+    valid_cats = [c[0] for c in Keyword.CATEGORY_CHOICES]
+    if category not in valid_cats:
+        category = Keyword.CATEGORY_CUSTOM
+    try:
+        min_price = int(min_price)
+    except (TypeError, ValueError):
+        min_price = 20000
+    if Keyword.objects.filter(name=name).exists():
+        return Response({"ok": False, "error": f"关键词「{name}」已存在"}, status=409)
+    kw = Keyword.objects.create(name=name, category=category, min_price=min_price)
+    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price})
+
+
+@csrf_exempt
+@api_view(["PUT", "DELETE"])
+def keyword_detail_api(request, pk):
+    """PUT: update keyword name/category/min_price. DELETE: delete keyword and all its data."""
+    try:
+        kw = Keyword.objects.get(pk=pk)
+    except Keyword.DoesNotExist:
+        return Response({"ok": False, "error": "Not found"}, status=404)
+
+    if request.method == "DELETE":
+        kw.delete()
+        return Response({"ok": True})
+
+    # PUT
+    name = (request.data.get("name") or "").strip()
+    category = (request.data.get("category") or "").strip().lower()
+    min_price = request.data.get("min_price")
+    if name and name != kw.name:
+        if Keyword.objects.filter(name=name).exclude(pk=pk).exists():
+            return Response({"ok": False, "error": f"关键词「{name}」已存在"}, status=409)
+        kw.name = name
+    if category:
+        valid_cats = [c[0] for c in Keyword.CATEGORY_CHOICES]
+        if category in valid_cats:
+            kw.category = category
+    if min_price is not None:
+        try:
+            kw.min_price = int(min_price)
+        except (TypeError, ValueError):
+            pass
+    kw.save()
+    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price})
 
 
 def _get_export_key():

@@ -8,12 +8,14 @@ class Keyword(models.Model):
     CATEGORY_MOTHERBOARD = "motherboard"
     CATEGORY_RAM = "ram"
     CATEGORY_SSD = "ssd"
+    CATEGORY_CUSTOM = "custom"
     CATEGORY_CHOICES = [
         (CATEGORY_GPU, "GPU"),
         (CATEGORY_CPU, "CPU"),
         (CATEGORY_MOTHERBOARD, "Motherboard"),
         (CATEGORY_RAM, "RAM"),
         (CATEGORY_SSD, "SSD"),
+        (CATEGORY_CUSTOM, "自定义"),
     ]
     name = models.CharField(max_length=200, unique=True)
     category = models.CharField(
