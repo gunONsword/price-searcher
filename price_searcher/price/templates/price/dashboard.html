@@ -1096,19 +1096,26 @@
       });
     });
 
-    // ─── iOS-style swipe-right-from-left-edge to go back ─────────────────────
+    // ─── Sidebar swipe gestures (no conflict with main content) ──────────────
     (function () {
-      var tsX = 0, tsY = 0, isEdge = false;
+      var tsX = 0, tsY = 0;
       document.addEventListener("touchstart", function (e) {
         tsX = e.touches[0].clientX;
         tsY = e.touches[0].clientY;
-        isEdge = tsX < 44; // within ~44px of left edge (one thumb-width)
       }, { passive: true });
       document.addEventListener("touchend", function (e) {
-        if (!isEdge) return;
         var dx = e.changedTouches[0].clientX - tsX;
         var dy = Math.abs(e.changedTouches[0].clientY - tsY);
-        if (dx > 60 && dy < 80) goBack(); // rightward swipe from edge
+        if (dy > 60) return; // mostly vertical — likely scrolling, ignore
+        var sidebar = document.getElementById("sidebar");
+        var isOpen = !sidebar.classList.contains("-translate-x-full");
+        if (!isOpen && tsX < 44 && dx > 60) {
+          // Right swipe from left edge → open sidebar
+          toggleSidebar();
+        } else if (isOpen && dx < -60) {
+          // Left swipe anywhere → close sidebar
+          closeSidebar();
+        }
       }, { passive: true });
     })();
 
