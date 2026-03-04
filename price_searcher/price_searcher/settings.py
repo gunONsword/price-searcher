@@ -30,11 +30,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-1ze_432dg=r1^)%znc6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
-_allowed = [h.strip() for h in (os.getenv("ALLOWED_HOSTS", "") or "").split(",") if h.strip()]
-# Allow *.onrender.com when ALLOWED_HOSTS is not set (e.g. on Render)
-if not _allowed:
-    _allowed = [".onrender.com", "localhost", "127.0.0.1"]
-ALLOWED_HOSTS = _allowed
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
