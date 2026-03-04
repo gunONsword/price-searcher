@@ -397,8 +397,6 @@
       overviewSection.classList.remove("hidden");
       manageSection.classList.add("hidden");
       document.getElementById("modelSelectWrapper").classList.remove("hidden");
-      document.getElementById("sidebarBottomArea").classList.remove("hidden");
-      document.getElementById("collectBtnArea").classList.remove("hidden");
       updateBackBtn();
     }
 
@@ -407,8 +405,7 @@
       detailSection.classList.add("hidden");
       manageSection.classList.remove("hidden");
       document.getElementById("modelSelectWrapper").classList.add("hidden");
-      document.getElementById("sidebarBottomArea").classList.add("hidden");
-      document.getElementById("collectBtnArea").classList.add("hidden");
+      // Sidebar keyword list + collect buttons stay visible at all times
       mainTitle.textContent = "关键词管理";
       mainSubtitle.textContent = "管理所有监控关键词，自定义关键词类别及价格门槛";
       updateBackBtn();
@@ -879,18 +876,30 @@
     modelSelect.addEventListener("change", switchView);
 
     // ─── Sidebar mobile ───────────────────────────────────────────────────────
+    var _mainEl = document.querySelector("main");
+    function _lockMainScroll()   { if (_mainEl) _mainEl.style.overflowY = "hidden"; }
+    function _unlockMainScroll() { if (_mainEl) _mainEl.style.overflowY = ""; }
+
     function toggleSidebar() {
       var sidebar = document.getElementById("sidebar");
       var overlay = document.getElementById("sidebarOverlay");
       var isHidden = sidebar.classList.contains("-translate-x-full");
-      if (isHidden) { sidebar.classList.remove("-translate-x-full"); overlay.classList.remove("hidden"); }
-      else { sidebar.classList.add("-translate-x-full"); overlay.classList.add("hidden"); }
+      if (isHidden) {
+        sidebar.classList.remove("-translate-x-full");
+        overlay.classList.remove("hidden");
+        _lockMainScroll();
+      } else {
+        sidebar.classList.add("-translate-x-full");
+        overlay.classList.add("hidden");
+        _unlockMainScroll();
+      }
     }
     function closeSidebar() {
       var sidebar = document.getElementById("sidebar");
       var overlay = document.getElementById("sidebarOverlay");
       sidebar.classList.add("-translate-x-full");
       overlay.classList.add("hidden");
+      _unlockMainScroll();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
