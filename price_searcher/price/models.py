@@ -27,6 +27,8 @@ class Keyword(models.Model):
     )
     # Minimum price (JPY) to accept when collecting; results below this are ignored. Default 20000.
     min_price = models.PositiveIntegerField(default=20000, help_text="Only save prices >= this (JPY)")
+    # Reference / guide price (JPY) for personal budgeting. Optional.
+    guide_price = models.PositiveIntegerField(null=True, blank=True, help_text="User's reference/guide price (JPY)")
 
     class Meta:
         ordering = ["category", "name"]

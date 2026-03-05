@@ -247,7 +247,7 @@ def keywords_manage_api(request):
     if request.method == "GET":
         keywords = Keyword.objects.all().order_by("category", "name")
         data = [
-            {"id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price}
+            {"id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price, "guide_price": kw.guide_price}
             for kw in keywords
         ]
         return Response(data)
@@ -256,6 +256,7 @@ def keywords_manage_api(request):
     name = (request.data.get("name") or "").strip()
     category = (request.data.get("category") or Keyword.CATEGORY_CUSTOM).strip().lower()
     min_price = request.data.get("min_price", 20000)
+    guide_price = request.data.get("guide_price")
     if not name:
         return Response({"ok": False, "error": "name is required"}, status=400)
     valid_cats = [c[0] for c in Keyword.CATEGORY_CHOICES]
@@ -265,10 +266,14 @@ def keywords_manage_api(request):
         min_price = int(min_price)
     except (TypeError, ValueError):
         min_price = 20000
+    try:
+        guide_price = int(guide_price) if guide_price not in (None, "") else None
+    except (TypeError, ValueError):
+        guide_price = None
     if Keyword.objects.filter(name=name).exists():
         return Response({"ok": False, "error": f"关键词「{name}」已存在"}, status=409)
-    kw = Keyword.objects.create(name=name, category=category, min_price=min_price)
-    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price})
+    kw = Keyword.objects.create(name=name, category=category, min_price=min_price, guide_price=guide_price)
+    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price, "guide_price": kw.guide_price})
 
 
 @csrf_exempt
@@ -288,6 +293,7 @@ def keyword_detail_api(request, pk):
     name = (request.data.get("name") or "").strip()
     category = (request.data.get("category") or "").strip().lower()
     min_price = request.data.get("min_price")
+    guide_price = request.data.get("guide_price", "UNSET")
     if name and name != kw.name:
         if Keyword.objects.filter(name=name).exclude(pk=pk).exists():
             return Response({"ok": False, "error": f"关键词「{name}」已存在"}, status=409)
@@ -301,8 +307,13 @@ def keyword_detail_api(request, pk):
             kw.min_price = int(min_price)
         except (TypeError, ValueError):
             pass
+    if guide_price != "UNSET":
+        try:
+            kw.guide_price = int(guide_price) if guide_price not in (None, "") else None
+        except (TypeError, ValueError):
+            pass
     kw.save()
-    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price})
+    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price, "guide_price": kw.guide_price})
 
 
 def _get_export_key():

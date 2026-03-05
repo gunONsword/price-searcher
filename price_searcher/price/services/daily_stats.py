@@ -263,5 +263,6 @@ def get_keywords_with_summary(category: str | None = None):
             "name": kw.name,
             "latest_date": latest_date,
             "latest_low_price": latest_price,
+            "guide_price": kw.guide_price,
         })
     return result
