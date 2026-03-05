@@ -15,14 +15,19 @@
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 10px; }
+    /* Fix mobile horizontal scroll / overscroll bleed */
+    html { overflow-x: hidden; overscroll-behavior-x: none; }
+    body { overscroll-behavior-x: none; }
+    /* Sidebar: use dvh so it shrinks with mobile browser chrome */
+    #sidebar { height: 100vh; height: 100svh; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex overflow-x-hidden">
   <!-- Mobile overlay -->
-  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closeSidebar()"></div>
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closeSidebar()" style="touch-action:none;"></div>
 
   <!-- Sidebar -->
-  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 border-r border-slate-800 flex flex-col h-screen bg-slate-950 transition-transform duration-300 -translate-x-full md:translate-x-0 md:sticky md:top-0 md:z-auto overflow-hidden">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 border-r border-slate-800 flex flex-col bg-slate-950 transition-transform duration-300 -translate-x-full md:translate-x-0 md:sticky md:top-0 md:h-screen md:z-auto overflow-hidden">
     <!-- Header -->
     <div class="p-5 pb-3 flex-shrink-0">
       <div class="flex items-center justify-between mb-5">
@@ -1198,10 +1203,30 @@
     // ─── Sidebar swipe gestures (no conflict with main content) ──────────────
     (function () {
       var tsX = 0, tsY = 0;
+      var _dirLocked = false, _isHoriz = false;
+
       document.addEventListener("touchstart", function (e) {
         tsX = e.touches[0].clientX;
         tsY = e.touches[0].clientY;
+        _dirLocked = false;
+        _isHoriz = false;
       }, { passive: true });
+
+      // Non-passive so we can preventDefault to block browser horizontal scroll
+      document.addEventListener("touchmove", function (e) {
+        if (_dirLocked) {
+          if (_isHoriz) e.preventDefault();
+          return;
+        }
+        var dx = Math.abs(e.touches[0].clientX - tsX);
+        var dy = Math.abs(e.touches[0].clientY - tsY);
+        if (dx > 6 || dy > 6) {
+          _dirLocked = true;
+          _isHoriz = dx > dy;
+          if (_isHoriz) e.preventDefault();
+        }
+      }, { passive: false });
+
       document.addEventListener("touchend", function (e) {
         var dx = e.changedTouches[0].clientX - tsX;
         var dy = Math.abs(e.changedTouches[0].clientY - tsY);
