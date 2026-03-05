@@ -887,8 +887,21 @@
 
     // ─── Sidebar mobile ───────────────────────────────────────────────────────
     var _mainEl = document.querySelector("main");
-    function _lockMainScroll()   { if (_mainEl) _mainEl.style.overflowY = "hidden"; }
-    function _unlockMainScroll() { if (_mainEl) _mainEl.style.overflowY = ""; }
+    function _lockMainScroll() {
+      if (_mainEl) _mainEl.style.overflowY = "hidden";
+      document.body.style.overflow = "hidden";
+    }
+    function _unlockMainScroll() {
+      if (_mainEl) _mainEl.style.overflowY = "";
+      document.body.style.overflow = "";
+    }
+
+    // Prevent touch-scroll on non-scrollable sidebar areas from propagating to body
+    document.getElementById("sidebar").addEventListener("touchmove", function(e) {
+      if (!e.target.closest("#keywordCheckList")) {
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     function toggleSidebar() {
       var sidebar = document.getElementById("sidebar");
