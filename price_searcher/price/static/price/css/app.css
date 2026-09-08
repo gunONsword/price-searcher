@@ -23,15 +23,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 10px; }
 
-/* ── Phone-frame shell (centers on desktop, fills width on mobile) ─────────── */
+/* ── Phone-frame shell ───────────────────────────────────────────────────────
+   Full width by default so it always fills the real device viewport, no matter
+   how wide that viewport reports (some phones/embedded browsers report well
+   over 480px). Only clamp to a phone-sized column on genuinely wide desktop
+   browsers. */
 #appShell {
-  position: relative; max-width: 480px; margin: 0 auto; min-height: 100dvh;
+  position: relative; width: 100%; min-height: 100dvh;
   background: var(--hp-bg); overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(148,163,184,.06);
 }
-@media (min-width: 481px) {
+@media (min-width: 900px) {
   body { background: #05070f; }
-  #appShell { min-height: 100dvh; }
+  #appShell { max-width: 480px; margin: 0 auto; box-shadow: 0 0 0 1px rgba(148,163,184,.06); }
 }
 
 /* ── Screens ─────────────────────────────────────────────────────────────── */
