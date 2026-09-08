@@ -5,7 +5,11 @@
       "Bash(python manage.py seed_other_hardware_keywords:*)",
       "Bash(python manage.py shell:*)",
       "Bash(python manage.py seed_gpu_keywords:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "WebSearch",
+      "WebFetch(domain:akiba-pc.watch.impress.co.jp)",
+      "WebFetch(domain:tabulog.jp)",
+      "WebFetch(domain:macha795.com)"
     ]
   }
 }

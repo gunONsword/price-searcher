@@ -216,13 +216,14 @@ def run_collect_daily_prices_api(request):
         body = {}
     keyword_names = body.get("keywords")
     if isinstance(keyword_names, list) and len(keyword_names) > 0:
-        _collect_keywords_filter = [str(n).strip() for n in keyword_names if str(n).strip()]
+        selected_keywords = [str(n).strip() for n in keyword_names if str(n).strip()]
     else:
-        _collect_keywords_filter = None
+        selected_keywords = None
 
     with _progress_lock:
         if _collect_progress["running"]:
             return Response({"ok": False, "error": "采集正在进行中"}, status=409)
+        _collect_keywords_filter = selected_keywords
         _collect_progress["running"] = True
         _collect_progress["total"] = 0
         _collect_progress["current"] = 0

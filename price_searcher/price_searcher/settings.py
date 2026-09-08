@@ -148,3 +148,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Local PostgreSQL settings shared by the website and management commands.
+import json as _database_json
+_local_database_file = BASE_DIR.parent / ".local" / "postgres.json"
+if _local_database_file.exists():
+    DATABASES = {"default": _database_json.loads(_local_database_file.read_text(encoding="utf-8"))}

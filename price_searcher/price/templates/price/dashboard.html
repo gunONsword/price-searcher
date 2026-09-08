@@ -1,14 +1,19 @@
+{% load static %}
 <!DOCTYPE html>
 <html class="dark" lang="zh-CN">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>硬件价格监控仪表盘</title>
+  <title>HARDPRICE · 硬件监控中心</title>
+  <meta name="theme-color" content="#0B1020">
+  <link rel="icon" type="image/svg+xml" href="{% static 'price/icon.svg' %}">
+  <link rel="apple-touch-icon" href="{% static 'price/icon-192.png' %}">
+  <link rel="manifest" href="{% static 'price/manifest.webmanifest' %}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script>
-    tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#3c83f6" }, fontFamily: { display: ["Inter", "sans-serif"] } } } };
+    tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#6EA8FE" }, fontFamily: { display: ["Inter", "sans-serif"] } } } };
   </script>
   <style>
     body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
@@ -21,8 +26,13 @@
     /* Sidebar: use dvh so it shrinks with mobile browser chrome */
     #sidebar { height: 100vh; height: 100svh; }
   </style>
+  <link rel="stylesheet" href="{% static 'price/hardprice.css' %}?v=20260908a">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex overflow-x-hidden">
+  <dialog id="brandIntro" class="brand-intro" aria-label="HARDPRICE">
+    <div class="brand-intro-inner"><div class="brand-aura"><img src="{% static 'price/logo.svg' %}" width="100" height="100" alt="HARDPRICE 标志"></div>
+    <h1>HARDPRICE</h1><p>Hardware prices,<br>without the noise.</p><button id="enterApp" type="button">Start <span aria-hidden="true">↗</span></button><small>硬件价格，清晰掌握。</small></div>
+  </dialog>
   <!-- Mobile overlay -->
   <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 hidden" onclick="closeSidebar()" style="touch-action:none;"></div>
 
@@ -32,8 +42,7 @@
     <div class="p-5 pb-3 flex-shrink-0">
       <div class="flex items-center justify-between mb-5">
         <div class="flex items-center gap-3 text-primary">
-          <span class="text-2xl">📊</span>
-          <h1 class="text-xl font-bold tracking-tight">硬件监控中心</h1>
+          <img src="{% static 'price/logo.svg' %}" alt="" width="34" height="34"><div><h1 class="brand-wordmark">HARDPRICE</h1><p class="brand-caption">硬件监控中心</p></div>
         </div>
         <button type="button" class="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400" onclick="closeSidebar()">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -86,7 +95,7 @@
 
   <!-- Main -->
   <main class="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar">
-    <header class="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 md:px-8 py-4">
+    <header class="app-header sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 md:px-8 py-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
         <div class="flex items-center gap-2 min-w-0">
           <button type="button" id="sidebarToggle" class="md:hidden flex-shrink-0 p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300" onclick="toggleSidebar()">
@@ -110,7 +119,13 @@
       </div>
     </header>
 
-    <div class="p-4 md:p-8 space-y-6 md:space-y-8">
+    <div class="app-content p-4 md:p-8 space-y-6 md:space-y-8">
+      <section class="brand-hero" id="brandHero">
+        <div class="hero-topline"><button type="button" class="hero-brand" id="openBrand"><img src="{% static 'price/logo.svg' %}" width="24" height="24" alt="">HARDPRICE</button><span class="daily-badge"><i></i>每日 00:00 · JST 自动采集</span></div>
+        <p class="hero-eyebrow">LESS NOISE. BETTER CHOICES.</p><h2>看清每一次<br><span>价格变化。</span></h2><p class="hero-description">你的下一次硬件升级，从这里开始。</p>
+        <div class="hero-orbit" aria-hidden="true"><img src="{% static 'price/logo.svg' %}" alt=""></div>
+      </section>
+      <nav id="categoryChips" class="category-chips" aria-label="硬件类别"></nav>
       <!-- Overview -->
       <div id="overviewSection" class="space-y-6">
         <div class="bg-slate-800/50 rounded-xl border border-slate-800 overflow-hidden">
@@ -180,7 +195,7 @@
                 <button data-days="0"  class="trend-range-btn px-3 py-1 rounded-md text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300">全部</button>
               </div>
             </div>
-            <div class="h-[280px]"><canvas id="trendChart"></canvas></div>
+            <div class="h-[280px]"><canvas id="trendChart" role="img" aria-label="所选硬件的历史价格趋势"></canvas></div>
             <div id="trendEmpty" class="h-[280px] flex items-center justify-center text-slate-500 text-sm hidden">暂无趋势数据</div>
           </div>
           <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-800">
@@ -198,7 +213,7 @@
               </div>
             </div>
             <p id="distDateLabel" class="text-slate-500 text-xs mb-2"></p>
-            <div class="h-[280px]"><canvas id="distChart"></canvas></div>
+            <div class="h-[280px]"><canvas id="distChart" role="img" aria-label="所选硬件的价格分布"></canvas></div>
             <div id="distEmpty" class="h-[280px] flex items-center justify-center text-slate-500 text-sm hidden">请选择日期</div>
           </div>
         </div>
@@ -392,7 +407,7 @@
     var currentView = "category"; // "category" | "manage"
     var allDailyData = [];
     var trendDays = 30;
-    var COLORS = ["#3fb950", "#58a6ff", "#d2a8ff", "#f778ba", "#79c0ff"];
+    var COLORS = ["#5EEAD4", "#6EA8FE", "#A78BFA", "#F472B6", "#A3E635"];
 
     var CATEGORY_TITLES = {
       gpu: "显卡价格监控", cpu: "处理器价格监控", ram: "内存价格监控",
@@ -418,6 +433,7 @@
     }
 
     function showCategoryView() {
+      document.body.dataset.view = "category";
       overviewSection.classList.remove("hidden");
       manageSection.classList.add("hidden");
       document.getElementById("modelSelectWrapper").classList.remove("hidden");
@@ -425,6 +441,7 @@
     }
 
     function showManageView() {
+      document.body.dataset.view = "manage";
       overviewSection.classList.add("hidden");
       detailSection.classList.add("hidden");
       manageSection.classList.remove("hidden");
@@ -546,7 +563,7 @@
           var pct = prevAvg ? (diff / prevAvg * 100).toFixed(1) : "0.0";
           var arrow = diff > 0 ? "↑" : diff < 0 ? "↓" : "→";
           var pctSign = diff > 0 ? "+" : diff < 0 ? "-" : "";
-          var cls = diff > 0 ? "text-red-400" : diff < 0 ? "text-emerald-400" : "text-slate-400";
+          var cls = diff > 0 ? "price-up" : diff < 0 ? "price-down" : "text-slate-400";
           changeHtml = "<span class=\"" + cls + " font-medium\">" +
             arrow + " ¥" + Math.abs(diff).toLocaleString() +
             " <span class=\"text-xs opacity-75\">(" + pctSign + Math.abs(pct) + "%)</span></span>";
@@ -591,7 +608,6 @@
     }
 
     function renderTrendChart(daily) {
-      if (trendChart) { trendChart.destroy(); trendChart = null; }
       if (!daily || !daily.length) {
         trendChartEl.parentElement.style.display = "none";
         trendEmpty.classList.remove("hidden"); return;
@@ -603,19 +619,24 @@
       daily.forEach(function (d) {
         (d.all_prices || []).forEach(function (p) { scatterAll.push({ x: d.date, y: p }); });
       });
-      trendChart = new Chart(trendChartEl, {
+      var chartConfig = {
         type: "line",
         data: {
           labels: labels,
           datasets: [
             { type: "scatter", label: "本型号各条商品价格", data: scatterAll, backgroundColor: "rgba(148,163,184,0.35)", borderColor: "transparent", pointRadius: 3, pointHoverRadius: 5, order: 4 },
-            { label: "最高价", data: daily.map(function (d) { return d.high_price; }), borderColor: "#ef4444", backgroundColor: "rgba(239,68,68,0.05)", tension: 0.2, fill: false, borderDash: [4, 3], pointRadius: 2, order: 3 },
-            { label: "平均价", data: daily.map(function (d) { return d.avg_price; }), borderColor: "#3b82f6", tension: 0.2, fill: false, order: 2 },
-            { label: "最低价", data: daily.map(function (d) { return d.low_price; }), borderColor: "#22c55e", tension: 0.2, fill: false, order: 1 }
+            { label: "最高价", data: daily.map(function (d) { return d.high_price; }), borderColor: "#A78BFA", backgroundColor: "rgba(239,68,68,0.05)", tension: 0.38, fill: false, borderDash: [4, 3], pointRadius: 2, order: 3 },
+            { label: "平均价", data: daily.map(function (d) { return d.avg_price; }), borderColor: "#6EA8FE", tension: 0.38, fill: false, order: 2 },
+            { label: "最低价", data: daily.map(function (d) { return d.low_price; }), borderColor: "#5EEAD4", tension: 0.38, fill: false, order: 1 }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "top" } }, scales: { x: { type: "category" }, y: { beginAtZero: false } } }
-      });
+        options: { responsive: true, maintainAspectRatio: false, animation: {duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 650, easing: 'easeOutQuart'}, interaction: {mode:'index', intersect:false}, plugins: { legend: { position: "bottom", labels: {usePointStyle:true, boxWidth:6, padding:18} }, tooltip: {backgroundColor:'#131A2A', titleColor:'#F8FAFC', bodyColor:'#94A3B8', padding:14, cornerRadius:12} }, scales: { x: { type: "category", grid:{display:false}, ticks:{maxTicksLimit:6} }, y: { beginAtZero: false, grid:{color:'rgba(148,163,184,.09)'} } } }
+      };
+      if (trendChart) {
+        trendChart.data.labels = chartConfig.data.labels;
+        chartConfig.data.datasets.forEach(function(ds, i) { Object.assign(trendChart.data.datasets[i], ds); });
+        trendChart.update();
+      } else { trendChart = new Chart(trendChartEl, chartConfig); }
     }
 
     function applyTrendRange() {
@@ -632,6 +653,7 @@
       var subEl = document.getElementById("trendChartSubtitle");
       if (subEl) subEl.textContent = "仅当前选中型号" + (model ? "（" + model + "）" : "") + "：当日最低价、平均价、最高价及本型号各条商品价格";
       fetch("/api/daily-stats/?keyword=" + encodeURIComponent(model)).then(function (r) { return r.json(); }).then(function (data) {
+        if (modelSelect.value !== model) return;
         allDailyData = data.daily || [];
         if (!allDailyData.length) {
           if (trendChart) { trendChart.destroy(); trendChart = null; }
@@ -649,7 +671,7 @@
           var pctSign = diff > 0 ? "+" : diff < 0 ? "-" : "";
           cardChange.innerHTML = arrow + " ¥" + Math.abs(diff).toLocaleString() +
             "<span class=\"text-lg ml-1 opacity-75\">(" + pctSign + Math.abs(pct) + "%)</span>";
-          cardChange.className = "text-3xl font-bold " + (diff > 0 ? "text-red-400" : diff < 0 ? "text-emerald-400" : "text-slate-400");
+          cardChange.className = "text-3xl font-bold " + (diff > 0 ? "price-up" : diff < 0 ? "price-down" : "text-slate-400");
         } else {
           cardChange.textContent = "--";
           cardChange.className = "text-3xl font-bold text-slate-400";
@@ -683,6 +705,7 @@
         distEmpty.classList.remove("hidden");
         distDateLabel.textContent = ""; return;
       }
+      distChartEl.parentElement.classList.remove("hidden");
       distChartEl.parentElement.style.display = "block";
       distEmpty.classList.add("hidden");
       distDateLabel.textContent = dateStr + " · " + model + " 共 " + filtered.length + " 条";
@@ -691,7 +714,7 @@
       distChartBinPrices = hist.binPrices;
       distChart = new Chart(distChartEl, {
         type: "bar",
-        data: { labels: hist.labels, datasets: [{ label: "数量", data: hist.counts, backgroundColor: "rgba(59,130,246,0.6)", borderColor: "#3b82f6" }] },
+        data: { labels: hist.labels, datasets: [{ label: "数量", data: hist.counts, backgroundColor: "rgba(110,168,254,0.55)", borderColor: "#6EA8FE" }] },
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: function (ctx) { var p = distChartBinPrices[ctx.dataIndex]; return p && p.length ? "各记录: " + p.map(function (x) { return "¥" + x.toLocaleString(); }).join(", ") : ""; } } } },
@@ -1286,8 +1309,13 @@
       }, { passive: true });
     })();
 
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
+    Chart.defaults.color = "#94A3B8";
+    Chart.defaults.borderColor = "rgba(148,163,184,.10)";
+    Chart.defaults.font.family = "Inter, sans-serif";
     // ─── Init ─────────────────────────────────────────────────────────────────
     loadDashboard();
   </script>
+  <script src="{% static 'price/hardprice.js' %}?v=20260908a"></script>
 </body>
 </html>
