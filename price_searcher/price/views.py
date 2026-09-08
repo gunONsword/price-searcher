@@ -8,6 +8,7 @@ from io import StringIO
 from django.core.management import call_command
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view
@@ -274,6 +275,7 @@ def run_collect_daily_prices_api(request):
     return Response({"ok": True, "total": total})
 
 
+@never_cache
 def dashboard(request):
     """Mobile-app-style price tracker UI (home / search / detail / channels / collect / watch)."""
     return render(request, "price/app.html")
