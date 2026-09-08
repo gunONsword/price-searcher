@@ -58,11 +58,36 @@
   // ── Splash ───────────────────────────────────────────────────────────────
   (function initSplash() {
     var splash = document.getElementById("splash");
-    try { if (!sessionStorage.getItem("hardprice-entered")) splash.showModal(); } catch (e) {}
-    document.getElementById("enterAppBtn").addEventListener("click", function () {
+    var alreadyEntered = false;
+    try { alreadyEntered = !!sessionStorage.getItem("hardprice-entered"); } catch (e) {}
+    if (alreadyEntered) return;
+
+    var starsWrap = document.getElementById("splashStars");
+    for (var i = 0; i < 60; i++) {
+      var s = document.createElement("span");
+      s.style.left = Math.random() * 100 + "%";
+      s.style.top = Math.random() * 65 + "%";
+      s.style.animationDelay = (Math.random() * 3).toFixed(2) + "s";
+      s.style.opacity = (0.3 + Math.random() * 0.7).toFixed(2);
+      starsWrap.appendChild(s);
+    }
+
+    var closed = false;
+    function enterApp() {
+      if (closed) return;
+      closed = true;
       splash.close();
       try { sessionStorage.setItem("hardprice-entered", "1"); } catch (e) {}
-    });
+    }
+
+    try {
+      splash.showModal();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { document.getElementById("splashProgressFill").style.width = "100%"; });
+      });
+      setTimeout(enterApp, 2200);
+      splash.addEventListener("click", enterApp);
+    } catch (e) { enterApp(); }
   })();
 
   // ── Tab / screen router ──────────────────────────────────────────────────

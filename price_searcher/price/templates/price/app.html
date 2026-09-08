@@ -11,8 +11,8 @@
   <link rel="manifest" href="{% static 'price/manifest.webmanifest' %}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="{% static 'price/css/app.css' %}?v=20260908b">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{% static 'price/css/app.css' %}?v=20260908c">
 </head>
 <body class="min-h-screen">
   <div id="appShell">
@@ -20,11 +20,19 @@
     <!-- ═══ Splash ═══ -->
     <dialog id="splash" class="brand-intro" aria-label="HARDPRICE">
       <div class="brand-intro-inner">
-        <div class="brand-hero-img"><img src="{% static 'price/img/hw/gpu.svg' %}" alt="HARDPRICE"></div>
-        <h1>HARDPRICE</h1>
-        <p>Build Smarter,<br>Spend Less.</p>
-        <button id="enterAppBtn" type="button">开始使用 <span aria-hidden="true">→</span></button>
-        <small>硬件价格，一目了然。</small>
+        <div class="sky"><div class="stars" id="splashStars"></div><div class="aurora aurora-a"></div><div class="aurora aurora-b"></div><div class="aurora aurora-c"></div></div>
+        <div class="brand-intro-top">
+          <img class="brand-mark" src="{% static 'price/logo.svg' %}" width="56" height="56" alt="">
+          <h1><span>HARD</span><b>PRICE</b></h1>
+          <p class="tagline-cn">硬件价格，一目了然</p>
+          <p class="tagline-en">Better Price. Smarter Build.</p>
+        </div>
+        <div class="brand-hero-img"><img src="{% static 'price/img/hw/gpu-hero.svg' %}" alt=""></div>
+        <p class="script-line">Build Smarter<br>Spend Less.</p>
+        <div class="mountains"></div>
+        <div class="splash-progress"><div class="splash-progress-fill" id="splashProgressFill"></div></div>
+        <small>为更好的装机体验</small>
+        <button id="enterAppBtn" type="button" hidden>开始使用</button>
       </div>
     </dialog>
 
