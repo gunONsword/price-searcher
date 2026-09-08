@@ -40,26 +40,29 @@
     <section class="screen" data-screen-id="home">
       <div class="greeting-row">
         <div>
-          <h1 id="greetingText">Hi 👋</h1>
+          <p class="eyebrow" id="greetingEyebrow">Good evening 👋</p>
+          <h1 id="greetingText">发现更好的<br>硬件价格。</h1>
         </div>
-        <button type="button" class="icon-btn" id="homeRefreshBtn" title="刷新">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <button type="button" class="icon-btn bell-btn" id="notifBellBtn" title="提醒">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <span class="dot"></span>
         </button>
       </div>
       <button type="button" class="search-bar" id="homeSearchBar">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-        <span>搜索 GPU、CPU、SSD...</span>
+        <span>搜索 GPU、CPU、SSD、主板...</span>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v4M4 4h4M20 4v4M20 4h-4M4 20v-4M4 20h4M20 20v-4M20 20h-4"/></svg>
       </button>
 
       <nav class="cat-row" id="homeCatRow" aria-label="硬件类别"></nav>
 
-      <div class="section-title"><h2>市场概览</h2><span id="overviewDateLabel"></span></div>
+      <div class="section-title"><h2>市场概览</h2><button type="button" id="overviewSeeAllBtn">查看全部 &gt;</button></div>
       <div class="overview-tiles" id="overviewTiles"></div>
       <div class="rate-badge" id="rateBadge">汇率加载中…</div>
 
-      <div class="section-title"><h2 id="productListTitle">热门产品</h2><button type="button" class="text-xs text-slate-500" id="homeManageLink">管理 &gt;</button></div>
+      <div class="section-title"><h2 id="productListTitle">🔥 热门产品</h2><button type="button" id="homeManageLink">查看全部 &gt;</button></div>
       <div class="product-list" id="productList"></div>
-      <div class="search-empty" id="productListEmpty" hidden>该类别下暂无追踪的关键词。点击"管理"添加一个吧。</div>
+      <div class="search-empty" id="productListEmpty" hidden>该类别下暂无追踪的关键词。点击"查看全部"添加一个吧。</div>
     </section>
 
     <!-- ═══ Tab: Search (live Rakuten only) ═══ -->
@@ -124,6 +127,54 @@
       </div>
       <div class="search-empty" id="manageEmpty" hidden>暂无关键词，点右上角 + 添加一个</div>
       <div id="manageCardList" style="display:flex;flex-direction:column;gap:8px;padding:4px 18px 12px"></div>
+    </section>
+
+    <!-- ═══ Tab: Profile (我的) ═══ -->
+    <section class="screen" data-screen-id="profile" hidden>
+      <div class="profile-header">
+        <div class="avatar"><svg width="26" height="26" fill="none" stroke="#0B1020" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z" opacity="0"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 20c0-4 3.5-6 8-6s8 2 8 6M12 12a4 4 0 100-8 4 4 0 000 8z"/></svg></div>
+        <div><h2>HARDPRICE 用户</h2><p>本地追踪 · 无需登录</p></div>
+      </div>
+
+      <p class="profile-section-label">汇率</p>
+      <div class="profile-card">
+        <div class="profile-row" id="profileRateRow">
+          <span class="ico">¥</span>
+          <div style="flex:1"><p class="label" id="profileRateLabel">实时汇率加载中…</p><p class="sub" id="profileRateUpdated"></p></div>
+          <button type="button" class="chev" id="profileRateRefreshBtn" title="刷新汇率">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <p class="profile-section-label">功能</p>
+      <div class="profile-card">
+        <div class="profile-row" id="profileNotifRow">
+          <span class="ico"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></span>
+          <div style="flex:1"><p class="label">浏览器通知权限</p><p class="sub" id="profileNotifStatus">未知</p></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="profile-row" id="profileWatchRow">
+          <span class="ico"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></span>
+          <div style="flex:1"><p class="label">关键词管理</p><p class="sub" id="profileKwCount">--</p></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="profile-row" id="profileAdminRow">
+          <span class="ico"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4l8 3v5c0 5-3.5 8-8 8s-8-3-8-8V7z"/></svg></span>
+          <div style="flex:1"><p class="label">后台管理 (Django admin)</p><p class="sub">添加关键词 / 查看原始数据</p></div>
+          <span class="chev">↗</span>
+        </div>
+        <div class="profile-row" id="profileClearRow">
+          <span class="ico"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6"/></svg></span>
+          <div style="flex:1"><p class="label">清除本地收藏 / 提醒</p><p class="sub">只影响这台设备的浏览器</p></div>
+          <span class="chev">›</span>
+        </div>
+      </div>
+
+      <p class="profile-section-label">关于</p>
+      <div class="profile-card">
+        <p class="profile-about">HARDPRICE 是一个个人硬件比价小工具：实时查询 Rakuten 日本市场显卡/处理器等价格，人工维护京东参考价并按实时汇率换算比较，每日自动采集历史价格趋势。数据仅供个人参考。</p>
+      </div>
     </section>
 
     <!-- ═══ Overlay: Category sheet ═══ -->
@@ -199,6 +250,15 @@
       <div id="alertList"></div>
     </div>
 
+    <!-- ═══ Overlay: Notifications (all local alerts) ═══ -->
+    <div class="sheet-backdrop" id="notifBackdrop" hidden></div>
+    <div class="sheet" id="notifSheet" hidden>
+      <div class="grabber"></div>
+      <h3>价格提醒</h3>
+      <p style="font-size:11px;color:var(--hp-muted);margin-top:-6px;margin-bottom:10px">仅浏览器内提醒，命中后会弹出通知，不支持邮件 / App 推送</p>
+      <div id="notifItemList"></div>
+    </div>
+
     <!-- ═══ Bottom nav ═══ -->
     <nav id="bottomNav">
       <button type="button" data-tab="home" aria-current="true">
@@ -216,6 +276,10 @@
       <button type="button" data-tab="watch">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg>
         关注
+      </button>
+      <button type="button" data-tab="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c0-4 3.5-6.5 7.5-6.5s7.5 2.5 7.5 6.5"/></svg>
+        我的
       </button>
     </nav>
 

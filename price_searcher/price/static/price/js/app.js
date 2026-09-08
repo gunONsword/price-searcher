@@ -14,14 +14,61 @@
   var CAT_BY_ID = {}; CATS.forEach(function (c) { CAT_BY_ID[c.id] = c; });
   function catImg(cat) { return IMG_BASE + (CAT_BY_ID[cat] ? cat : "custom") + ".svg"; }
   function catLabel(cat) { return CAT_BY_ID[cat] ? CAT_BY_ID[cat].label : "自定义"; }
+  function catColor(cat) { return CAT_BY_ID[cat] ? CAT_BY_ID[cat].color : "#F472B6"; }
+
+  // Small flat line-icon glyphs for the category row / picker (kept separate from
+  // the bigger illustrated artwork used on cards and the detail hero).
+  var CAT_ICON_PATHS = {
+    gpu: '<path d="M4 15v-4a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><circle cx="9" cy="13" r="2"/><circle cx="15" cy="13" r="2"/>',
+    cpu: '<rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M9 4v3M12 4v3M15 4v3M9 17v3M12 17v3M15 17v3M4 9h3M4 12h3M4 15h3M17 9h3M17 12h3M17 15h3"/>',
+    ram: '<rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M7 9V6M11 9V6M15 9V6M7 17v2M11 17v2M15 17v2"/>',
+    ssd: '<rect x="4" y="6" width="16" height="12" rx="2"/><circle cx="15.5" cy="14.5" r="1.5"/><path d="M7 10h5"/>',
+    motherboard: '<path d="M4 6h16v9l-3 3H7l-3-3z"/><rect x="7" y="9" width="5" height="5" rx="1"/><path d="M14 9h4M14 12h4"/>',
+    custom: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/>',
+  };
+  function catIconSvg(cat, size) {
+    size = size || 22;
+    var d = CAT_ICON_PATHS[cat] || CAT_ICON_PATHS.custom;
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + "</svg>";
+  }
 
   function fmtJPY(n) { return n == null ? "--" : "¥" + Math.round(n).toLocaleString(); }
   function fmtCNY(n) { return n == null ? "--" : "¥" + Number(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
   function escHtml(s) { return (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  // A price drop is good news for a buyer (green); a price rise is bad news (red).
   function pctBadge(pct) {
     if (pct == null || isNaN(pct)) return { text: "--", cls: "" };
     var sign = pct > 0 ? "+" : "";
-    return { text: sign + pct.toFixed(1) + "%", cls: pct > 0 ? "price-up" : pct < 0 ? "price-down" : "" };
+    return { text: sign + pct.toFixed(1) + "%", cls: pct < 0 ? "price-good" : pct > 0 ? "price-bad" : "" };
+  }
+  // Infer a display "brand" line from the keyword text — a plain naming-convention
+  // fact (RTX implies NVIDIA GeForce, etc.), not fabricated data.
+  function brandLine(category, name) {
+    name = name || "";
+    if (category === "gpu") {
+      if (/\bRTX\b|\bGTX\b/i.test(name)) return "NVIDIA GeForce";
+      if (/\bRX\s?\d/i.test(name) || /Radeon/i.test(name)) return "AMD Radeon";
+      if (/\bArc\b/i.test(name)) return "Intel Arc";
+    } else if (category === "cpu") {
+      if (/Ryzen/i.test(name)) return "AMD Ryzen";
+      if (/Core Ultra/i.test(name)) return "Intel Core Ultra";
+      if (/Core i\d/i.test(name)) return "Intel Core";
+    }
+    return "";
+  }
+  // Minimal inline sparkline from real trend points (no fabricated data).
+  function sparklineSvg(points, color) {
+    if (!points || points.length < 2) return "";
+    var vals = points.map(function (p) { return p.avg; });
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    var range = max - min || 1;
+    var w = 100, h = 26;
+    var coords = vals.map(function (v, i) {
+      var x = (i / (vals.length - 1)) * w;
+      var y = h - ((v - min) / range) * h;
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    return '<svg class="spark" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none"><polyline points="' + coords + '" stroke="' + color + '"/></svg>';
   }
 
   var toastEl = document.getElementById("toast");
@@ -107,6 +154,7 @@
     else if (tab === "search") { document.getElementById("searchInput").focus(); }
     else if (tab === "collect") loadCollectTab();
     else if (tab === "watch") loadManageTab();
+    else if (tab === "profile") loadProfileTab();
   }
   document.querySelectorAll("#bottomNav button").forEach(function (btn) {
     btn.addEventListener("click", function () { showTab(btn.getAttribute("data-tab")); });
@@ -133,7 +181,7 @@
     var list = document.getElementById("categorySheetList");
     list.innerHTML = CATS.map(function (c) {
       return '<div class="sheet-row' + (c.id === state.category ? " active" : "") + '" data-cat="' + c.id + '">' +
-        '<div class="ico"><img src="' + catImg(c.id) + '" alt=""></div>' +
+        '<div class="ico" style="background:' + c.color + '22;color:' + c.color + '">' + catIconSvg(c.id, 20) + "</div>" +
         '<div class="label">' + c.label + (c.short !== c.label ? " (" + c.short + ")" : "") + "</div>" +
         '<svg class="check" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>' +
         "</div>";
@@ -153,17 +201,18 @@
   // ── Home ─────────────────────────────────────────────────────────────────
   function greeting() {
     var h = new Date().getHours();
-    var g = h < 6 ? "夜深了" : h < 12 ? "早上好" : h < 18 ? "下午好" : "晚上好";
+    var g = h < 6 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
     return g + " 👋";
   }
 
   function renderHomeCatRow() {
     var row = document.getElementById("homeCatRow");
     row.innerHTML = CATS.map(function (c) {
-      return '<button type="button" class="cat-pill' + (c.id === state.category ? " active" : "") + '" data-cat="' + c.id + '">' +
-        '<span class="cat-icon"><img src="' + catImg(c.id) + '" alt=""></span>' +
+      var active = c.id === state.category;
+      return '<button type="button" class="cat-pill' + (active ? " active" : "") + '" data-cat="' + c.id + '" style="color:' + c.color + '">' +
+        '<span class="cat-icon" style="background:' + c.color + (active ? "33" : "1c") + '">' + catIconSvg(c.id, 24) + "</span>" +
         '<span class="label">' + c.short + "</span></button>";
-    }).join("") + '<button type="button" class="cat-pill" id="catMoreBtn"><span class="cat-icon">▾</span><span class="label">全部</span></button>';
+    }).join("") + '<button type="button" class="cat-pill" id="catMoreBtn" style="color:var(--hp-muted)"><span class="cat-icon" style="background:var(--hp-surface)">▾</span><span class="label">全部</span></button>';
     row.querySelectorAll(".cat-pill[data-cat]").forEach(function (btn) {
       btn.addEventListener("click", function () { state.category = btn.getAttribute("data-cat"); loadHome(); });
     });
@@ -172,16 +221,16 @@
 
   function renderOverviewTiles() {
     var wrap = document.getElementById("overviewTiles");
-    var order = ["gpu", "ssd", "ram"];
-    var rows = order.map(function (cat) {
+    var order = ["gpu", "ssd", "ram", "cpu", "motherboard", "custom"];
+    var rows = order.filter(function (cat) { return state.overviewByCat[cat]; }).map(function (cat) {
       var d = state.overviewByCat[cat];
-      var pct = d ? d.change_pct : null;
+      var pct = d.change_pct;
       var b = pctBadge(pct);
-      return '<div class="overview-tile"><p class="label">' + catLabel(cat) + '</p><p class="pct ' + b.cls + '">' + b.text + "</p></div>";
+      var color = catColor(cat);
+      var spark = sparklineSvg(d.trend, b.cls === "price-good" ? "#34D399" : b.cls === "price-bad" ? "#FB7185" : color);
+      return '<div class="overview-tile" style="--tile-accent:' + color + '"><p class="label">' + catLabel(cat) + '</p><p class="pct ' + b.cls + '">' + b.text + "</p>" + spark + "</div>";
     });
-    wrap.innerHTML = rows.join("");
-    var latestDate = state.overviewByCat.gpu ? state.overviewByCat.gpu.latest_date : (state.overviewByCat[state.category] ? state.overviewByCat[state.category].latest_date : "");
-    document.getElementById("overviewDateLabel").textContent = latestDate || "";
+    wrap.innerHTML = rows.join("") || '<p class="search-empty" style="padding:20px 0">暂无市场数据</p>';
   }
 
   function renderRateBadge() {
@@ -213,14 +262,13 @@
     empty.hidden = true;
     wrap.innerHTML = state.homeKeywords.map(function (kw) {
       var price = fmtJPY(kw.latest_low_price);
-      var pct = null;
-      var hist = state.dailyHistByName && state.dailyHistByName[kw.name];
-      // (percent change computed lazily below when summary available)
       var b = pctBadge(kw._changePct);
       var fav = isFav(kw.name);
+      var brand = brandLine(kw.category, kw.name);
       return '<div class="product-card" data-name="' + escHtml(kw.name) + '">' +
         '<span class="thumb"><img src="' + catImg(kw.category) + '" alt=""></span>' +
-        '<div class="info"><p class="name">' + escHtml(kw.name) + '</p><p class="meta">' + (kw.latest_date || "暂无数据") + '</p></div>' +
+        '<div class="info">' + (brand ? '<p class="brand">' + escHtml(brand) + "</p>" : "") +
+        '<p class="name">' + escHtml(kw.name) + '</p><p class="meta">' + (kw.latest_date || "暂无数据") + '</p></div>' +
         '<div class="price-col"><p class="price">' + price + '</p><p class="pct ' + b.cls + '">' + b.text + '</p></div>' +
         '<button type="button" class="fav-btn' + (fav ? " active" : "") + '" data-fav="' + escHtml(kw.name) + '">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + (fav ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></button>' +
@@ -259,8 +307,9 @@
   }
 
   function loadHome() {
-    document.getElementById("greetingText").textContent = greeting();
+    document.getElementById("greetingEyebrow").textContent = greeting();
     renderHomeCatRow();
+    updateBellDot();
     var work = [];
     if (!Object.keys(state.overviewByCat).length) work.push(loadCategoryOverview());
     if (!state.exRate) work.push(loadExchangeRate());
@@ -289,9 +338,7 @@
   }
   document.getElementById("homeSearchBar").addEventListener("click", function () { showTab("search"); });
   document.getElementById("homeManageLink").addEventListener("click", function () { showTab("watch"); });
-  document.getElementById("homeRefreshBtn").addEventListener("click", function () {
-    state.overviewByCat = {}; state.exRate = null; loadHome();
-  });
+  document.getElementById("overviewSeeAllBtn").addEventListener("click", openCategorySheet);
 
   // ── Search (Rakuten-only live search) ───────────────────────────────────
   var searchTimer = null;
@@ -380,7 +427,7 @@
         var pct = prev.avg_price ? (last.avg_price - prev.avg_price) / prev.avg_price * 100 : null;
         var b = pctBadge(pct);
         var pctEl = document.getElementById("detailPct");
-        pctEl.textContent = b.text; pctEl.className = "pct " + (pct < 0 ? "down" : "");
+        pctEl.textContent = b.text; pctEl.className = "pct " + (pct < 0 ? "good" : pct > 0 ? "bad" : "");
       } else {
         document.getElementById("detailPct").textContent = "--";
       }
@@ -526,6 +573,7 @@
     setAlerts(all);
     if (window.Notification && Notification.permission === "default") Notification.requestPermission();
     renderAlertList();
+    updateBellDot();
     toast("已创建浏览器内提醒");
   });
 
@@ -548,8 +596,52 @@
     if (remaining.length !== alerts.length) {
       if (remaining.length) all[name] = remaining; else delete all[name];
       setAlerts(all);
+      updateBellDot();
     }
   }
+
+  // ── Notification bell (lists every local alert across keywords) ─────────
+  var notifBackdrop = document.getElementById("notifBackdrop");
+  var notifSheet = document.getElementById("notifSheet");
+  function updateBellDot() {
+    var all = getAlerts();
+    var has = Object.keys(all).some(function (k) { return all[k] && all[k].length; });
+    document.getElementById("notifBellBtn").classList.toggle("has-alerts", has);
+  }
+  function renderNotifSheet() {
+    var all = getAlerts();
+    var names = Object.keys(all).filter(function (k) { return all[k] && all[k].length; });
+    var list = document.getElementById("notifItemList");
+    if (!names.length) { list.innerHTML = '<p class="notif-empty">还没有设置任何价格提醒</p>'; return; }
+    var rows = [];
+    names.forEach(function (name) {
+      all[name].forEach(function (a, i) {
+        rows.push({ name: name, dir: a.dir, target: a.target, i: i });
+      });
+    });
+    list.innerHTML = rows.map(function (r) {
+      return '<div class="notif-item"><div><p class="kw">' + escHtml(r.name) + '</p><p class="cond">当价格' + (r.dir === "below" ? "低于" : "高于") + " " + fmtJPY(r.target) + '</p></div>' +
+        '<button data-name="' + escHtml(r.name) + '" data-i="' + r.i + '">删除</button></div>';
+    }).join("");
+    list.querySelectorAll("button[data-name]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var all2 = getAlerts();
+        var n = btn.getAttribute("data-name"), i = parseInt(btn.getAttribute("data-i"), 10);
+        if (all2[n]) {
+          all2[n].splice(i, 1);
+          if (!all2[n].length) delete all2[n];
+          setAlerts(all2);
+        }
+        renderNotifSheet();
+        updateBellDot();
+      });
+    });
+  }
+  document.getElementById("notifBellBtn").addEventListener("click", function () {
+    renderNotifSheet();
+    notifBackdrop.hidden = false; notifSheet.hidden = false;
+  });
+  notifBackdrop.addEventListener("click", function () { notifBackdrop.hidden = true; notifSheet.hidden = true; });
 
   // ── Collect tab ──────────────────────────────────────────────────────────
   function loadCollectTab() {
@@ -754,6 +846,52 @@
       if (data.ok) { closeKwModal(); loadKeywordsAll().then(renderManageList); toast("已保存"); }
       else { errEl.textContent = data.error || "保存失败"; errEl.classList.remove("hidden"); }
     });
+  });
+
+  // ── Profile (我的) tab ───────────────────────────────────────────────────
+  function renderProfileNotifStatus() {
+    var el = document.getElementById("profileNotifStatus");
+    if (!window.Notification) { el.textContent = "此浏览器不支持通知"; return; }
+    var map = { granted: "已授权", denied: "已拒绝（需在浏览器设置里重新开启）", default: "未授权，点击开启" };
+    el.textContent = map[Notification.permission] || Notification.permission;
+  }
+  function renderProfileRate() {
+    var r = state.exRate;
+    var label = document.getElementById("profileRateLabel");
+    var updated = document.getElementById("profileRateUpdated");
+    if (!r) { label.textContent = "汇率加载中…"; updated.textContent = ""; return; }
+    label.textContent = "1 CNY ≈ ¥" + r.cny_to_jpy.toFixed(2) + " JPY";
+    updated.textContent = (r.stale ? "⚠ 获取失败，使用参考值 · " : "已更新 · ") + new Date(r.updated_at).toLocaleString();
+  }
+  function loadProfileTab() {
+    document.getElementById("profileKwCount").textContent = state.kwAll.length ? "共 " + state.kwAll.length + " 个关键词" : "加载中…";
+    renderProfileNotifStatus();
+    if (state.exRate) renderProfileRate();
+    else loadExchangeRate().then(renderProfileRate);
+    if (!state.kwAll.length) loadKeywordsAll().then(function () {
+      document.getElementById("profileKwCount").textContent = "共 " + state.kwAll.length + " 个关键词";
+    });
+  }
+  document.getElementById("profileRateRefreshBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    document.getElementById("profileRateLabel").textContent = "刷新中…";
+    loadExchangeRate().then(renderProfileRate);
+  });
+  document.getElementById("profileNotifRow").addEventListener("click", function () {
+    if (!window.Notification) return;
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then(renderProfileNotifStatus);
+    } else {
+      toast(Notification.permission === "granted" ? "通知权限已开启" : "请在浏览器设置中开启通知权限");
+    }
+  });
+  document.getElementById("profileWatchRow").addEventListener("click", function () { showTab("watch"); });
+  document.getElementById("profileAdminRow").addEventListener("click", function () { window.open("/admin/", "_blank"); });
+  document.getElementById("profileClearRow").addEventListener("click", function () {
+    if (!confirm("确定要清除本机保存的收藏和价格提醒吗？此操作不影响服务器上的关键词数据。")) return;
+    try { localStorage.removeItem("hp-favs"); localStorage.removeItem("hp-alerts"); } catch (e) {}
+    updateBellDot();
+    toast("已清除本地收藏与提醒");
   });
 
   // ── Init ─────────────────────────────────────────────────────────────────

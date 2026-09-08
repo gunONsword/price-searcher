@@ -223,12 +223,13 @@ def get_daily_prices(date):
     ]
 
 
-def get_category_overview():
+def get_category_overview(trend_points: int = 7):
     """
     For each category with data: latest available date's market-average price,
-    the previous available date's average, and the % change between them.
+    the previous available date's average, the % change between them, and a
+    short trend series (last `trend_points` dates) for a home-screen sparkline.
     Used by the home screen's "市场概览" tiles. Returns
-    [{category, latest_date, latest_avg, prev_date, prev_avg, change_pct}, ...].
+    [{category, latest_date, latest_avg, prev_date, prev_avg, change_pct, trend}, ...].
     """
     by_cat_date = {}  # (category, date_iso) -> {"sum": float, "count": int}
 
@@ -264,6 +265,10 @@ def get_category_overview():
             prev_avg = round(prev_bucket["sum"] / prev_bucket["count"])
             if prev_avg:
                 change_pct = round((latest_avg - prev_avg) / prev_avg * 100, 1)
+        trend = [
+            {"date": d, "avg": round(by_cat_date[(category, d)]["sum"] / by_cat_date[(category, d)]["count"])}
+            for d in ordered[:trend_points][::-1]
+        ]
         out.append({
             "category": category,
             "latest_date": latest_date,
@@ -271,6 +276,7 @@ def get_category_overview():
             "prev_date": prev_date,
             "prev_avg": prev_avg,
             "change_pct": change_pct,
+            "trend": trend,
         })
 
     priority = {"gpu": 0, "ssd": 1, "ram": 2, "cpu": 3, "motherboard": 4, "custom": 5}
