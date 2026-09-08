@@ -1,0 +1,5 @@
+-r price_searcher/requirements.txt
+Django>=5.2,<5.3
+mysqlclient>=2.2
+waitress>=3,<4
+whitenoise>=6,<7

@@ -223,6 +223,61 @@ def get_daily_prices(date):
     ]
 
 
+def get_category_overview():
+    """
+    For each category with data: latest available date's market-average price,
+    the previous available date's average, and the % change between them.
+    Used by the home screen's "市场概览" tiles. Returns
+    [{category, latest_date, latest_avg, prev_date, prev_avg, change_pct}, ...].
+    """
+    by_cat_date = {}  # (category, date_iso) -> {"sum": float, "count": int}
+
+    def _add(category, date_iso, value):
+        key = (category, date_iso)
+        bucket = by_cat_date.setdefault(key, {"sum": 0.0, "count": 0})
+        bucket["sum"] += value
+        bucket["count"] += 1
+
+    for row in DailyPriceSummary.objects.values("category", "date", "avg_price"):
+        if row["category"]:
+            _add(row["category"], row["date"].isoformat(), row["avg_price"])
+
+    for row in DailyPriceSnapshot.objects.values("category", "date", "price"):
+        if row["category"]:
+            _add(row["category"], row["date"].isoformat(), row["price"])
+
+    dates_by_cat = {}
+    for (category, date_iso) in by_cat_date:
+        dates_by_cat.setdefault(category, set()).add(date_iso)
+
+    out = []
+    for category, dates in dates_by_cat.items():
+        ordered = sorted(dates, reverse=True)
+        latest_date = ordered[0]
+        latest_bucket = by_cat_date[(category, latest_date)]
+        latest_avg = round(latest_bucket["sum"] / latest_bucket["count"])
+        prev_date = ordered[1] if len(ordered) > 1 else None
+        prev_avg = None
+        change_pct = None
+        if prev_date:
+            prev_bucket = by_cat_date[(category, prev_date)]
+            prev_avg = round(prev_bucket["sum"] / prev_bucket["count"])
+            if prev_avg:
+                change_pct = round((latest_avg - prev_avg) / prev_avg * 100, 1)
+        out.append({
+            "category": category,
+            "latest_date": latest_date,
+            "latest_avg": latest_avg,
+            "prev_date": prev_date,
+            "prev_avg": prev_avg,
+            "change_pct": change_pct,
+        })
+
+    priority = {"gpu": 0, "ssd": 1, "ram": 2, "cpu": 3, "motherboard": 4, "custom": 5}
+    out.sort(key=lambda r: priority.get(r["category"], 99))
+    return out
+
+
 def get_keywords_with_summary(category: str | None = None):
     """Return list of keywords with latest low_price and date if any. Optional category filter."""
     qs = Keyword.objects.all()
@@ -261,8 +316,10 @@ def get_keywords_with_summary(category: str | None = None):
         result.append({
             "id": kw.id,
             "name": kw.name,
+            "category": kw.category,
             "latest_date": latest_date,
             "latest_low_price": latest_price,
             "guide_price": kw.guide_price,
+            "jd_price_cny": float(kw.jd_price_cny) if kw.jd_price_cny is not None else None,
         })
     return result

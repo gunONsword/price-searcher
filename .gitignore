@@ -1,2 +1,9 @@
 openclaw/
 .env
+.venv/
+
+.local/
+
+**/__pycache__/
+
+**/staticfiles/

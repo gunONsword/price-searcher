@@ -1,0 +1,23 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Motherboard">
+  <defs>
+    <radialGradient id="mbGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#FB923C" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#FB923C" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mbBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a2515"/>
+      <stop offset="100%" stop-color="#1c130c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="120" cy="115" r="95" fill="url(#mbGlow)"/>
+  <path d="M44 60h152v100l-20 20H64l-20-20z" fill="url(#mbBody)" stroke="#FB923C" stroke-width="2"/>
+  <rect x="62" y="78" width="52" height="52" rx="4" fill="#0B1020" stroke="#5EEAD4" stroke-width="1.4"/>
+  <rect x="128" y="78" width="50" height="20" rx="3" fill="#0B1020" stroke="#FB923C" stroke-width="1.2"/>
+  <rect x="128" y="102" width="50" height="20" rx="3" fill="#0B1020" stroke="#FB923C" stroke-width="1.2"/>
+  <g stroke="#FB923C" stroke-width="2" fill="none" opacity="0.9">
+    <path d="M62 140h40v18h30"/>
+    <path d="M118 158h44v-24h16"/>
+    <path d="M70 168h20v-14"/>
+  </g>
+  <g fill="#FB923C"><circle cx="62" cy="140" r="2.5"/><circle cx="118" cy="158" r="2.5"/><circle cx="178" cy="134" r="2.5"/><circle cx="70" cy="168" r="2.5"/></g>
+</svg>

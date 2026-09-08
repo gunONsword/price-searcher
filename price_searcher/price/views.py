@@ -20,20 +20,24 @@ from .services.daily_stats import (
     get_available_dates,
     get_daily_prices,
     get_keywords_with_summary,
+    get_category_overview,
     archive_and_purge_old_snapshots,
 )
 from .services.price_search import search_products, _get_rakuten_app_id
+from .services.exchange_rate import get_exchange_rate
 
 # Shared state for collect progress (updated by background thread)
 _collect_progress = {"running": False, "total": 0, "current": 0, "keyword": "", "error": None, "skipped": []}
 _progress_lock = threading.Lock()
 # When set, only these keyword names are collected (order preserved). None = all.
 _collect_keywords_filter = None
+# Set to True to ask the running collect thread to stop after the current keyword.
+_collect_cancel_requested = False
 
 
 def _run_collect_thread():
     """Run collection in thread; update _collect_progress after each keyword."""
-    global _collect_progress
+    global _collect_progress, _collect_cancel_requested
     today = date.today()
     if _collect_keywords_filter:
         name_to_kw = {kw.name: kw for kw in Keyword.objects.all()}
@@ -66,6 +70,10 @@ def _run_collect_thread():
         _collect_progress["error"] = None
         _collect_progress["skipped"] = []
     for i, kw in enumerate(keywords):
+        with _progress_lock:
+            if _collect_cancel_requested:
+                _collect_progress["error"] = "已手动停止"
+                break
         if i > 0:
             time.sleep(1)
         with _progress_lock:
@@ -104,6 +112,7 @@ def _run_collect_thread():
     with _progress_lock:
         _collect_progress["running"] = False
         _collect_progress["keyword"] = ""
+        _collect_cancel_requested = False
 
 
 @api_view(["GET"])
@@ -193,6 +202,33 @@ def seed_other_hardware_keywords_api(request):
         return Response({"ok": False, "error": str(e)}, status=500)
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
+@api_view(["POST"])
+def cancel_collect_api(request):
+    """Ask the running collect thread to stop after its current keyword."""
+    global _collect_cancel_requested
+    with _progress_lock:
+        if not _collect_progress["running"]:
+            return Response({"ok": False, "error": "没有正在进行的采集"}, status=409)
+        _collect_cancel_requested = True
+    return Response({"ok": True})
+
+
+@api_view(["GET"])
+def exchange_rate_api(request):
+    """Live JPY<->CNY exchange rate (cached ~30min). Used to convert the manually
+    maintained JD.com CNY price for comparison with Rakuten JPY prices."""
+    return Response(get_exchange_rate())
+
+
+@api_view(["GET"])
+def category_overview_api(request):
+    """Latest vs previous available date, market-average price and % change per
+    category. Powers the home screen's '市场概览' tiles."""
+    return Response({"categories": get_category_overview()})
+
+
 @api_view(["GET"])
 def collect_progress_api(request):
     """Current collect progress: total, current, keyword, running. Poll every 1s."""
@@ -206,7 +242,7 @@ def collect_progress_api(request):
 @api_view(["POST"])
 def run_collect_daily_prices_api(request):
     """Start collect in background. Body: optional {"keywords": ["RTX 5060", ...]}. Only checked keywords are collected."""
-    global _collect_keywords_filter
+    global _collect_keywords_filter, _collect_cancel_requested
     try:
         body = request.data if hasattr(request, "data") and request.data else {}
         if not body and getattr(request, "body", None):
@@ -216,13 +252,15 @@ def run_collect_daily_prices_api(request):
         body = {}
     keyword_names = body.get("keywords")
     if isinstance(keyword_names, list) and len(keyword_names) > 0:
-        _collect_keywords_filter = [str(n).strip() for n in keyword_names if str(n).strip()]
+        selected_keywords = [str(n).strip() for n in keyword_names if str(n).strip()]
     else:
-        _collect_keywords_filter = None
+        selected_keywords = None
 
     with _progress_lock:
         if _collect_progress["running"]:
             return Response({"ok": False, "error": "采集正在进行中"}, status=409)
+        _collect_keywords_filter = selected_keywords
+        _collect_cancel_requested = False
         _collect_progress["running"] = True
         _collect_progress["total"] = 0
         _collect_progress["current"] = 0
@@ -237,8 +275,28 @@ def run_collect_daily_prices_api(request):
 
 
 def dashboard(request):
-    """Visualization: daily price trends (all GPUs) and table of min/max/avg per GPU per day."""
-    return render(request, "price/dashboard.html")
+    """Mobile-app-style price tracker UI (home / search / detail / channels / collect / watch)."""
+    return render(request, "price/app.html")
+
+
+def _keyword_to_dict(kw):
+    return {
+        "id": kw.id,
+        "name": kw.name,
+        "category": kw.category,
+        "min_price": kw.min_price,
+        "guide_price": kw.guide_price,
+        "jd_price_cny": float(kw.jd_price_cny) if kw.jd_price_cny is not None else None,
+    }
+
+
+def _parse_jd_price_cny(value):
+    if value in (None, ""):
+        return None
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return None
 
 
 @api_view(["GET", "POST"])
@@ -246,17 +304,14 @@ def keywords_manage_api(request):
     """GET: list all keywords. POST: create a new keyword."""
     if request.method == "GET":
         keywords = Keyword.objects.all().order_by("category", "name")
-        data = [
-            {"id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price, "guide_price": kw.guide_price}
-            for kw in keywords
-        ]
-        return Response(data)
+        return Response([_keyword_to_dict(kw) for kw in keywords])
 
     # POST — create
     name = (request.data.get("name") or "").strip()
     category = (request.data.get("category") or Keyword.CATEGORY_CUSTOM).strip().lower()
     min_price = request.data.get("min_price", 20000)
     guide_price = request.data.get("guide_price")
+    jd_price_cny = _parse_jd_price_cny(request.data.get("jd_price_cny"))
     if not name:
         return Response({"ok": False, "error": "name is required"}, status=400)
     valid_cats = [c[0] for c in Keyword.CATEGORY_CHOICES]
@@ -272,8 +327,10 @@ def keywords_manage_api(request):
         guide_price = None
     if Keyword.objects.filter(name=name).exists():
         return Response({"ok": False, "error": f"关键词「{name}」已存在"}, status=409)
-    kw = Keyword.objects.create(name=name, category=category, min_price=min_price, guide_price=guide_price)
-    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price, "guide_price": kw.guide_price})
+    kw = Keyword.objects.create(
+        name=name, category=category, min_price=min_price, guide_price=guide_price, jd_price_cny=jd_price_cny,
+    )
+    return Response({"ok": True, **_keyword_to_dict(kw)})
 
 
 @csrf_exempt
@@ -294,6 +351,7 @@ def keyword_detail_api(request, pk):
     category = (request.data.get("category") or "").strip().lower()
     min_price = request.data.get("min_price")
     guide_price = request.data.get("guide_price", "UNSET")
+    jd_price_cny = request.data.get("jd_price_cny", "UNSET")
     if name and name != kw.name:
         if Keyword.objects.filter(name=name).exclude(pk=pk).exists():
             return Response({"ok": False, "error": f"关键词「{name}」已存在"}, status=409)
@@ -312,8 +370,10 @@ def keyword_detail_api(request, pk):
             kw.guide_price = int(guide_price) if guide_price not in (None, "") else None
         except (TypeError, ValueError):
             pass
+    if jd_price_cny != "UNSET":
+        kw.jd_price_cny = _parse_jd_price_cny(jd_price_cny)
     kw.save()
-    return Response({"ok": True, "id": kw.id, "name": kw.name, "category": kw.category, "min_price": kw.min_price, "guide_price": kw.guide_price})
+    return Response({"ok": True, **_keyword_to_dict(kw)})
 
 
 def _get_export_key():
