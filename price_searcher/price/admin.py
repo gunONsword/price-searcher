@@ -4,7 +4,7 @@ from .models import Keyword, DailyPriceSnapshot, DailyPriceSummary
 
 @admin.register(Keyword)
 class KeywordAdmin(admin.ModelAdmin):
-    list_display = ["name", "category", "min_price"]
+    list_display = ["name", "category", "min_price", "guide_price", "jd_price_cny"]
     list_filter = ["category"]
     search_fields = ["name"]
 

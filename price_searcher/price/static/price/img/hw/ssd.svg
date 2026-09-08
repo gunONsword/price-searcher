@@ -1,0 +1,20 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SSD">
+  <defs>
+    <radialGradient id="ssdGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#FBBF24" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#FBBF24" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ssdBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a2f1c"/>
+      <stop offset="100%" stop-color="#1f1810"/>
+    </linearGradient>
+  </defs>
+  <circle cx="120" cy="115" r="95" fill="url(#ssdGlow)"/>
+  <rect x="52" y="76" width="136" height="88" rx="10" fill="url(#ssdBody)" stroke="#FBBF24" stroke-width="2"/>
+  <rect x="52" y="76" width="40" height="88" rx="10" fill="#0B1020" opacity="0.35"/>
+  <rect x="66" y="94" width="16" height="52" rx="3" fill="#0B1020" stroke="#FBBF24" stroke-width="1.4"/>
+  <rect x="104" y="94" width="70" height="10" rx="3" fill="#0B1020" stroke="#5EEAD4" stroke-width="1"/>
+  <rect x="104" y="112" width="70" height="10" rx="3" fill="#0B1020" stroke="#5EEAD4" stroke-width="1"/>
+  <rect x="104" y="130" width="46" height="10" rx="3" fill="#0B1020" stroke="#5EEAD4" stroke-width="1"/>
+  <circle cx="170" cy="150" r="6" fill="#34D399"/>
+</svg>

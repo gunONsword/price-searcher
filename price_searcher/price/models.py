@@ -29,6 +29,13 @@ class Keyword(models.Model):
     min_price = models.PositiveIntegerField(default=20000, help_text="Only save prices >= this (JPY)")
     # Reference / guide price (JPY) for personal budgeting. Optional.
     guide_price = models.PositiveIntegerField(null=True, blank=True, help_text="User's reference/guide price (JPY)")
+    # Manually maintained JD.com reference price (CNY). JD has no public search API for
+    # hobby use and actively blocks automated scraping, so this is entered by hand and
+    # converted to JPY at display time using the live exchange rate.
+    jd_price_cny = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="京东参考价，人工维护 (CNY)",
+    )
 
     class Meta:
         ordering = ["category", "name"]

@@ -149,6 +149,13 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# In-process cache used to avoid re-fetching the JPY/CNY exchange rate on every request.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
 # Local PostgreSQL settings shared by the website and management commands.
 import json as _database_json
 _local_database_file = BASE_DIR.parent / ".local" / "postgres.json"
