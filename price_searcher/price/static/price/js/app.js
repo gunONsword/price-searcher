@@ -254,26 +254,21 @@
     } catch (e) {}
   }
 
-  function renderProductList() {
-    var wrap = document.getElementById("productList");
-    var empty = document.getElementById("productListEmpty");
-    document.getElementById("productListTitle").textContent = catLabel(state.category) + " · 追踪列表";
-    if (!state.homeKeywords.length) { wrap.innerHTML = ""; empty.hidden = false; return; }
-    empty.hidden = true;
-    wrap.innerHTML = state.homeKeywords.map(function (kw) {
-      var price = fmtJPY(kw.latest_low_price);
-      var b = pctBadge(kw._changePct);
-      var fav = isFav(kw.name);
-      var brand = brandLine(kw.category, kw.name);
-      return '<div class="product-card" data-name="' + escHtml(kw.name) + '">' +
-        '<span class="thumb"><img src="' + catImg(kw.category) + '" alt=""></span>' +
-        '<div class="info">' + (brand ? '<p class="brand">' + escHtml(brand) + "</p>" : "") +
-        '<p class="name">' + escHtml(kw.name) + '</p><p class="meta">' + (kw.latest_date || "暂无数据") + '</p></div>' +
-        '<div class="price-col"><p class="price">' + price + '</p><p class="pct ' + b.cls + '">' + b.text + '</p></div>' +
-        '<button type="button" class="fav-btn' + (fav ? " active" : "") + '" data-fav="' + escHtml(kw.name) + '">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + (fav ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></button>' +
-        "</div>";
-    }).join("");
+  function productCardHtml(kw) {
+    var price = fmtJPY(kw.latest_low_price);
+    var b = pctBadge(kw._changePct);
+    var fav = isFav(kw.name);
+    var brand = brandLine(kw.category, kw.name);
+    return '<div class="product-card" data-name="' + escHtml(kw.name) + '">' +
+      '<span class="thumb"><img src="' + catImg(kw.category) + '" alt=""></span>' +
+      '<div class="info">' + (brand ? '<p class="brand">' + escHtml(brand) + "</p>" : "") +
+      '<p class="name">' + escHtml(kw.name) + '</p><p class="meta">' + (kw.latest_date || "暂无数据") + '</p></div>' +
+      '<div class="price-col"><p class="price">' + price + '</p><p class="pct ' + b.cls + '">' + b.text + '</p></div>' +
+      '<button type="button" class="fav-btn' + (fav ? " active" : "") + '" data-fav="' + escHtml(kw.name) + '">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="' + (fav ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></button>' +
+      "</div>";
+  }
+  function wireProductCards(wrap, onFavToggle) {
     wrap.querySelectorAll(".product-card").forEach(function (card) {
       card.addEventListener("click", function (e) {
         if (e.target.closest("[data-fav]")) return;
@@ -284,10 +279,58 @@
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
         toggleFav(btn.getAttribute("data-fav"));
-        renderProductList();
+        onFavToggle();
       });
     });
   }
+
+  var HOME_LIST_PREVIEW = 6;
+  function renderProductList() {
+    var wrap = document.getElementById("productList");
+    var empty = document.getElementById("productListEmpty");
+    document.getElementById("productListTitle").textContent = "🔥 " + catLabel(state.category) + " 热门";
+    if (!state.homeKeywords.length) { wrap.innerHTML = ""; empty.hidden = false; return; }
+    empty.hidden = true;
+    var preview = state.homeKeywords.slice(0, HOME_LIST_PREVIEW);
+    wrap.innerHTML = preview.map(productCardHtml).join("");
+    wireProductCards(wrap, renderProductList);
+  }
+
+  // ── Category list (full list + sort, opened from "查看全部") ────────────
+  function sortCategoryItems(items, sort) {
+    var out = items.slice();
+    if (sort === "price") {
+      out.sort(function (a, b) { return (a.latest_low_price == null) - (b.latest_low_price == null) || (a.latest_low_price || 0) - (b.latest_low_price || 0); });
+    } else if (sort === "change") {
+      out.sort(function (a, b) { return (a._changePct == null) - (b._changePct == null) || (a._changePct || 0) - (b._changePct || 0); });
+    } else if (sort === "updated") {
+      out.sort(function (a, b) { return (b.latest_date || "").localeCompare(a.latest_date || ""); });
+    }
+    return out;
+  }
+  function renderCategoryListItems() {
+    var wrap = document.getElementById("categoryListItems");
+    var empty = document.getElementById("categoryListEmpty");
+    if (!state.homeKeywords.length) { wrap.innerHTML = ""; empty.hidden = false; return; }
+    empty.hidden = true;
+    var items = sortCategoryItems(state.homeKeywords, state.categoryListSort);
+    wrap.innerHTML = items.map(productCardHtml).join("");
+    wireProductCards(wrap, renderCategoryListItems);
+  }
+  function openCategoryList() {
+    document.getElementById("categoryListTitle").textContent = catLabel(state.category) + " (" + (CAT_BY_ID[state.category] ? CAT_BY_ID[state.category].short : "") + ")";
+    state.categoryListSort = "default";
+    document.querySelectorAll("#categoryListSortTabs button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-sort") === "default"); });
+    renderCategoryListItems();
+    openOverlay("categoryList");
+  }
+  document.querySelectorAll("#categoryListSortTabs button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.categoryListSort = btn.getAttribute("data-sort");
+      document.querySelectorAll("#categoryListSortTabs button").forEach(function (b) { b.classList.toggle("active", b === btn); });
+      renderCategoryListItems();
+    });
+  });
 
   function loadCategoryOverview() {
     return api("/api/category-overview/").then(function (data) {
@@ -337,7 +380,7 @@
     });
   }
   document.getElementById("homeSearchBar").addEventListener("click", function () { showTab("search"); });
-  document.getElementById("homeManageLink").addEventListener("click", function () { showTab("watch"); });
+  document.getElementById("homeManageLink").addEventListener("click", openCategoryList);
   document.getElementById("overviewSeeAllBtn").addEventListener("click", openCategorySheet);
 
   // ── Search (Rakuten-only live search) ───────────────────────────────────
@@ -431,6 +474,16 @@
       } else {
         document.getElementById("detailPct").textContent = "--";
       }
+      var monthLine = document.getElementById("detailMonthLine");
+      if (state.detailDaily.length >= 2) {
+        var monthAgoIdx = Math.max(0, state.detailDaily.length - 31);
+        var monthAgo = state.detailDaily[monthAgoIdx];
+        if (monthAgoIdx > 0 || state.detailDaily.length > 5) {
+          var diff = last.low_price - monthAgo.low_price;
+          monthLine.hidden = false;
+          monthLine.textContent = "较" + monthAgo.date + " " + (diff > 0 ? "+" : diff < 0 ? "-" : "") + "¥" + Math.abs(diff).toLocaleString();
+        } else monthLine.hidden = true;
+      } else monthLine.hidden = true;
     }
   }
 
@@ -466,6 +519,15 @@
   });
   document.getElementById("detailChannelsBtn").addEventListener("click", function () { openChannels(state.detailName); });
   document.getElementById("detailAlertBtn").addEventListener("click", function () { openAlertSheet(state.detailName, currentLatestPrice()); });
+  document.getElementById("detailShareBtn").addEventListener("click", function () {
+    var url = location.origin + location.pathname;
+    var text = state.detailName + " " + fmtJPY(currentLatestPrice()) + " · HARDPRICE";
+    if (navigator.share) {
+      navigator.share({ title: "HARDPRICE", text: text, url: url }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text + " " + url).then(function () { toast("已复制到剪贴板"); });
+    } else toast(text);
+  });
 
   // ── Channels screen (Rakuten + JD, real data only) ──────────────────────
   function openChannels(name) {
@@ -501,7 +563,7 @@
           var isBest = r.price === minPrice && rows.length > 1;
           return '<div class="channel-row' + (isBest ? " best" : "") + '">' +
             '<span class="badge" style="background:' + r.color + '">' + r.badge + '</span>' +
-            '<div class="info"><p class="name">' + r.site + (isBest ? '<span class="best-tag">最低价</span>' : "") + '</p><p class="sub">' + r.sub + '</p></div>' +
+            '<div class="info"><p class="name">' + r.site + (isBest ? '<span class="best-tag">最安值</span>' : "") + '</p><p class="sub">' + r.sub + '</p></div>' +
             '<span class="price">' + fmtJPY(r.price) + '</span>' +
             (r.url ? '<a class="go-btn" href="' + escHtml(r.url) + '" target="_blank" rel="noopener">去看看</a>' : '<span class="go-btn" style="opacity:.5">仅参考</span>') +
             "</div>";
@@ -527,15 +589,22 @@
     document.getElementById("alertKwName").textContent = name;
     document.getElementById("alertCurrentPrice").textContent = fmtJPY(currentPrice);
     document.querySelectorAll(".alert-toggle button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-dir") === "below"); });
+    var sliderMax = Math.max(500000, (currentPrice || 200000) * 2);
     var target = currentPrice ? Math.round(currentPrice * 0.9 / 100) * 100 : 100000;
     document.getElementById("alertTargetPrice").value = target;
-    document.getElementById("alertTargetSlider").max = Math.max(500000, (currentPrice || 200000) * 2);
+    document.getElementById("alertTargetSlider").max = sliderMax;
     document.getElementById("alertTargetSlider").value = target;
+    document.getElementById("alertSliderMin").textContent = "0";
+    document.getElementById("alertSliderMax").textContent = sliderMax.toLocaleString();
+    document.querySelectorAll("#alertQuickPct button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-pct") === "0"); });
+    var pushToggle = document.getElementById("alertPushToggle");
+    pushToggle.checked = window.Notification && Notification.permission === "granted";
     renderAlertList();
     alertBackdrop.hidden = false; alertSheet.hidden = false;
   }
   function closeAlertSheet() { alertBackdrop.hidden = true; alertSheet.hidden = true; }
   alertBackdrop.addEventListener("click", closeAlertSheet);
+  document.getElementById("alertCloseBtn").addEventListener("click", closeAlertSheet);
   document.querySelectorAll(".alert-toggle button").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state.alertDir = btn.getAttribute("data-dir");
@@ -544,8 +613,26 @@
   });
   var alertPriceInput = document.getElementById("alertTargetPrice");
   var alertSlider = document.getElementById("alertTargetSlider");
-  alertPriceInput.addEventListener("input", function () { alertSlider.value = alertPriceInput.value; });
-  alertSlider.addEventListener("input", function () { alertPriceInput.value = alertSlider.value; });
+  function clearAlertQuickPct() { document.querySelectorAll("#alertQuickPct button").forEach(function (b) { b.classList.remove("active"); }); }
+  alertPriceInput.addEventListener("input", function () { alertSlider.value = alertPriceInput.value; clearAlertQuickPct(); document.querySelector('#alertQuickPct [data-pct="0"]').classList.add("active"); });
+  alertSlider.addEventListener("input", function () { alertPriceInput.value = alertSlider.value; clearAlertQuickPct(); document.querySelector('#alertQuickPct [data-pct="0"]').classList.add("active"); });
+  document.querySelectorAll("#alertQuickPct button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      clearAlertQuickPct();
+      btn.classList.add("active");
+      var pct = parseInt(btn.getAttribute("data-pct"), 10);
+      if (pct > 0 && state.alertCurrentPrice) {
+        var target = Math.round(state.alertCurrentPrice * (1 - pct / 100) / 100) * 100;
+        alertPriceInput.value = target;
+        alertSlider.value = target;
+      }
+    });
+  });
+  document.getElementById("alertPushToggle").addEventListener("change", function (e) {
+    if (e.target.checked && window.Notification && Notification.permission === "default") {
+      Notification.requestPermission().then(function (perm) { e.target.checked = perm === "granted"; });
+    }
+  });
 
   function renderAlertList() {
     var alerts = getAlerts()[state.alertName] || [];
@@ -606,8 +693,9 @@
   function updateBellDot() {
     var all = getAlerts();
     var has = Object.keys(all).some(function (k) { return all[k] && all[k].length; });
-    document.getElementById("notifBellBtn").classList.toggle("has-alerts", has);
+    document.querySelectorAll(".bell-btn").forEach(function (btn) { btn.classList.toggle("has-alerts", has); });
   }
+  var updateWatchBellDot = updateBellDot;
   function renderNotifSheet() {
     var all = getAlerts();
     var names = Object.keys(all).filter(function (k) { return all[k] && all[k].length; });
@@ -637,10 +725,11 @@
       });
     });
   }
-  document.getElementById("notifBellBtn").addEventListener("click", function () {
+  function openNotifSheet() {
     renderNotifSheet();
     notifBackdrop.hidden = false; notifSheet.hidden = false;
-  });
+  }
+  document.querySelectorAll(".bell-btn").forEach(function (btn) { btn.addEventListener("click", openNotifSheet); });
   notifBackdrop.addEventListener("click", function () { notifBackdrop.hidden = true; notifSheet.hidden = true; });
 
   // ── Collect tab ──────────────────────────────────────────────────────────
@@ -676,6 +765,10 @@
       if (!data.ok) toast(data.error || "停止失败");
     });
   });
+  document.getElementById("collectBgBtn").addEventListener("click", function () {
+    toast("采集仍在后台进行，可切换到其他页面");
+    showTab("home");
+  });
   function setRing(current, total) {
     var pct = total ? current / total : 0;
     var circumference = 2 * Math.PI * 74;
@@ -703,11 +796,14 @@
         setRing(p.current || 0, p.total || 0);
         renderCollectKwStatus(p);
         var startBtn = document.getElementById("collectStartBtn"), stopBtn = document.getElementById("collectStopBtn");
+        var bgBtn = document.getElementById("collectBgBtn"), titleEl = document.getElementById("collectStatusTitle");
         if (p.running) {
-          startBtn.hidden = true; stopBtn.hidden = false;
-          document.getElementById("collectStatusText").textContent = "采集中 " + (p.current || 0) + "/" + (p.total || 0) + (p.keyword ? " · " + p.keyword : "");
+          startBtn.hidden = true; stopBtn.hidden = false; bgBtn.hidden = false;
+          titleEl.hidden = false;
+          document.getElementById("collectStatusText").textContent = "实时获取 Rakuten 最新价格 · " + (p.current || 0) + "/" + (p.total || 0) + (p.keyword ? " · " + p.keyword : "");
         } else {
-          startBtn.hidden = false; stopBtn.hidden = true;
+          startBtn.hidden = false; stopBtn.hidden = true; bgBtn.hidden = true;
+          titleEl.hidden = true;
           clearInterval(state.collectTimer); state.collectTimer = null;
           if (p.total > 0) {
             var skipped = p.skipped || [];
@@ -724,8 +820,43 @@
 
   // ── Watch tab (keyword management) ──────────────────────────────────────
   var manageCatFilter = "", manageSearchTerm = "";
+  function loadWatchPriceData() {
+    return api("/api/dashboard-stats/").then(function (data) {
+      var summaryByName = {};
+      (data.summary || []).forEach(function (row) {
+        summaryByName[row.keyword_name] = summaryByName[row.keyword_name] || [];
+        summaryByName[row.keyword_name].push(row);
+      });
+      state.watchPriceByName = {};
+      (data.keywords || []).forEach(function (kw) {
+        var hist = (summaryByName[kw.name] || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+        var pct = null;
+        if (hist.length >= 2) {
+          var prev = hist[hist.length - 2].avg_price, cur = hist[hist.length - 1].avg_price;
+          pct = prev ? (cur - prev) / prev * 100 : null;
+        }
+        state.watchPriceByName[kw.name] = { latest_low_price: kw.latest_low_price, latest_date: kw.latest_date, changePct: pct };
+      });
+    });
+  }
+  function alertDirFor(name) {
+    var alerts = getAlerts()[name];
+    if (!alerts || !alerts.length) return null;
+    return alerts[0].dir; // "below" or "above"
+  }
+  function trendGlyph(pct) {
+    var down = pct != null && pct < 0;
+    var up = pct != null && pct > 0;
+    var color = down ? "#34D399" : up ? "#FB7185" : "#94A3B8";
+    var path = down ? "M2 5l5 5 4-4 5 6" : up ? "M2 13l5-5 4 4 5-6" : "M2 9h14";
+    return '<svg width="20" height="14" viewBox="0 0 20 14" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + path + '"/></svg>';
+  }
   function loadManageTab() {
-    loadKeywordsAll().then(renderManageList);
+    loadKeywordsAll().then(function () {
+      renderManageList();
+      loadWatchPriceData().then(renderManageList);
+    });
+    updateWatchBellDot();
   }
   function renderManageList() {
     var filtered = state.kwAll.filter(function (kw) {
@@ -741,21 +872,31 @@
     if (!filtered.length) { list.innerHTML = ""; empty.hidden = false; return; }
     empty.hidden = true;
     list.innerHTML = "";
+    var priceData = state.watchPriceByName || {};
     filtered.forEach(function (kw) {
       var card = document.createElement("div");
       card.className = "swipe-card";
       var minPrice = kw.min_price != null ? fmtJPY(kw.min_price) : "--";
       var guidePrice = kw.guide_price != null ? fmtJPY(kw.guide_price) : null;
       var jdPrice = kw.jd_price_cny != null ? "京东 ¥" + kw.jd_price_cny : null;
+      var pd = priceData[kw.name];
+      var price = pd && pd.latest_low_price != null ? fmtJPY(pd.latest_low_price) : "--";
+      var b = pd ? pctBadge(pd.changePct) : { text: "", cls: "" };
+      var dir = alertDirFor(kw.name);
       card.innerHTML =
         '<div class="delete-panel"><button data-del="' + kw.id + '" data-name="' + escHtml(kw.name) + '">删除</button></div>' +
         '<div class="card-content">' +
-        '<span class="thumb" style="width:40px;height:40px;border-radius:10px;background:var(--hp-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0"><img src="' + catImg(kw.category) + '" style="width:70%"></span>' +
-        '<div style="flex:1;min-width:0"><p style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(kw.name) + '</p>' +
-        '<div style="display:flex;gap:8px;margin-top:3px;font-size:11px;color:var(--hp-muted)"><span>' + catLabel(kw.category) + '</span><span>' + minPrice + '</span>' +
+        '<span class="thumb" style="width:44px;height:44px;border-radius:10px;background:var(--hp-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0"><img src="' + catImg(kw.category) + '" style="width:75%"></span>' +
+        '<div style="flex:1;min-width:0">' +
+        '<p style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(kw.name) + '</p>' +
+        '<div style="display:flex;align-items:center;gap:7px;margin-top:3px;font-size:12.5px"><b>' + price + '</b><span class="' + b.cls + '" style="font-size:11px;font-weight:700">' + b.text + '</span></div>' +
+        '<div style="display:flex;gap:8px;margin-top:2px;font-size:10.5px;color:var(--hp-muted)"><span>' + catLabel(kw.category) + '</span><span>门槛 ' + minPrice + '</span>' +
         (guidePrice ? '<span style="color:var(--hp-amber)">指导 ' + guidePrice + "</span>" : "") +
         (jdPrice ? '<span style="color:#F87171">' + jdPrice + "</span>" : "") +
         "</div></div>" +
+        (pd ? trendGlyph(pd.changePct) : "") +
+        '<button type="button" class="mini-bell' + (dir ? " dir-" + dir : "") + '" data-alert="' + escHtml(kw.name) + '" title="价格提醒">' +
+        '<svg width="18" height="18" fill="' + (dir ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg></button>' +
         '<button data-edit="' + kw.id + '" style="flex-shrink:0;color:var(--hp-blue);font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;background:rgba(110,168,254,.1)">编辑</button>' +
         "</div>";
       list.appendChild(card);
@@ -769,6 +910,14 @@
     });
     list.querySelectorAll("[data-del]").forEach(function (btn) {
       btn.addEventListener("click", function () { confirmDeleteKeyword(btn.getAttribute("data-del"), btn.getAttribute("data-name")); });
+    });
+    list.querySelectorAll("[data-alert]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var name = btn.getAttribute("data-alert");
+        var pd = priceData[name];
+        openAlertSheet(name, pd ? pd.latest_low_price : null);
+      });
     });
   }
   function initCardSwipe(card) {
