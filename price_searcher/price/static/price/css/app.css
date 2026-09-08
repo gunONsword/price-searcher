@@ -263,6 +263,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 #alertList { padding: 4px 18px 0; }
 .alert-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--hp-border); font-size: 12.5px; }
 .alert-item button { color: var(--hp-down); font-size: 11px; }
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-track { position: absolute; inset: 0; background: var(--hp-surface); border: 1px solid var(--hp-border); border-radius: 24px; transition: background .2s; cursor: pointer; }
+.switch-track::before { content: ''; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: transform .2s; }
+.switch input:checked + .switch-track { background: var(--hp-blue); border-color: var(--hp-blue); }
+.switch input:checked + .switch-track::before { transform: translateX(18px); }
 
 /* ── Collect screen ──────────────────────────────────────────────────────── */
 .collect-ring-wrap { display: flex; flex-direction: column; align-items: center; padding: 24px 18px 10px; }
@@ -296,6 +302,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .swipe-card .delete-panel { position: absolute; inset-block: 0; right: 0; width: 80px; background: var(--hp-down); display: flex; align-items: center; justify-content: center; }
 .swipe-card .delete-panel button { color: #fff; font-weight: 700; font-size: 12px; }
 .swipe-card .card-content { position: relative; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--hp-card); will-change: transform; transition: transform .25s cubic-bezier(.25,.46,.45,.94); }
+.mini-bell { flex-shrink: 0; color: var(--hp-muted); padding: 4px; }
+.mini-bell.dir-below { color: var(--hp-down); }
+.mini-bell.dir-above { color: var(--hp-up); }
 
 /* ── Notification sheet ──────────────────────────────────────────────────── */
 .notif-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--hp-border); }
