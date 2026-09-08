@@ -72,26 +72,45 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* ── Splash ──────────────────────────────────────────────────────────────── */
 .brand-intro {
   position: fixed; inset: 0; width: 100%; height: 100dvh; max-width: none; max-height: none;
-  margin: 0; border: 0; padding: 0; background: var(--hp-bg); color: var(--hp-text); z-index: 100;
+  margin: 0; border: 0; padding: 0; background: #060a18; color: var(--hp-text); z-index: 100; overflow: hidden;
 }
-.brand-intro::backdrop { background: var(--hp-bg); }
-.brand-intro-inner { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; }
-.brand-hero-img { position: relative; width: 220px; margin-bottom: 8px; }
-.brand-hero-img::before {
-  content: ''; position: absolute; inset: -60px; border-radius: 50%;
-  background: conic-gradient(var(--hp-blue), var(--hp-purple), var(--hp-cyan), var(--hp-blue));
-  filter: blur(70px); opacity: .3; animation: aura-drift 10s ease-in-out infinite;
+.brand-intro::backdrop { background: #060a18; }
+.brand-intro-inner {
+  position: relative; min-height: 100%; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start; text-align: center; padding: 48px 30px 34px; overflow: hidden; cursor: pointer;
 }
-.brand-hero-img img { position: relative; width: 100%; }
-.brand-intro h1 { font-size: 26px; font-weight: 800; letter-spacing: .12em; margin-top: 18px; }
-.brand-intro p { font-size: 17px; line-height: 1.5; color: var(--hp-muted); margin: 14px 0 36px; }
-.brand-intro button {
-  display: flex; justify-content: space-between; gap: 56px; align-items: center;
-  background: linear-gradient(100deg, var(--hp-blue), var(--hp-purple)); color: #0B1020;
-  padding: 15px 26px; border-radius: 16px; font-weight: 700; font-size: 15px; width: 100%; max-width: 280px;
+/* Night sky: gradient base + stars + aurora blobs */
+.sky { position: absolute; inset: 0; z-index: 0; background: radial-gradient(120% 90% at 50% -10%, #131c3a 0%, #0a0f22 45%, #060a18 100%); }
+.stars { position: absolute; inset: 0; }
+.stars span { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: twinkle 3.2s ease-in-out infinite; }
+@keyframes twinkle { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.aurora { position: absolute; border-radius: 50%; filter: blur(60px); animation: aura-drift 12s ease-in-out infinite; }
+.aurora-a { width: 340px; height: 340px; left: -80px; top: 40px; background: radial-gradient(circle, rgba(110,168,254,.5), transparent 70%); }
+.aurora-b { width: 380px; height: 380px; right: -100px; top: 120px; background: radial-gradient(circle, rgba(167,139,250,.45), transparent 70%); animation-delay: -4s; }
+.aurora-c { width: 300px; height: 300px; left: 50%; bottom: 60px; transform: translateX(-50%); background: radial-gradient(circle, rgba(244,114,182,.3), transparent 70%); animation-delay: -8s; }
+@keyframes aura-drift { 50% { transform: scale(1.15); opacity: .75; } }
+.mountains {
+  position: absolute; left: -5%; right: -5%; bottom: -2px; height: 150px; z-index: 1;
+  clip-path: polygon(0% 100%, 0% 68%, 10% 50%, 18% 62%, 27% 34%, 36% 58%, 46% 40%, 55% 64%, 64% 46%, 74% 66%, 84% 42%, 92% 60%, 100% 48%, 100% 100%);
+  background: linear-gradient(180deg, #212d5c 0%, #0a0e22 45%, #04060f 100%);
 }
-.brand-intro small { margin-top: 20px; font-size: 10px; color: #65718c; letter-spacing: .1em; }
-@keyframes aura-drift { 50% { transform: rotate(70deg) scale(1.15); opacity: .4; } }
+
+.brand-intro-top, .brand-hero-img, .script-line, .splash-progress, .brand-intro small { position: relative; z-index: 2; }
+.brand-mark { filter: drop-shadow(0 0 14px rgba(110,168,254,.6)); }
+.brand-intro-top h1 { margin-top: 12px; font-size: 30px; font-weight: 800; letter-spacing: .04em; }
+.brand-intro-top h1 span { color: #fff; }
+.brand-intro-top h1 b { font-weight: 800; background: linear-gradient(100deg, var(--hp-blue), var(--hp-purple)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tagline-cn { margin-top: 10px; font-size: 16px; font-weight: 700; color: #eef2ff; }
+.tagline-en { margin-top: 3px; font-size: 11px; letter-spacing: .12em; color: #8b98c2; text-transform: uppercase; }
+.brand-hero-img { width: min(320px, 84vw); margin: 18px 0 6px; }
+.brand-hero-img img { width: 100%; filter: drop-shadow(0 18px 30px rgba(0,0,0,.5)); }
+.script-line {
+  font-family: 'Caveat', cursive; font-weight: 700; font-size: 30px; line-height: 1.15; color: #cfe0ff;
+  margin-top: 2px; text-shadow: 0 0 18px rgba(110,168,254,.4);
+}
+.splash-progress { margin-top: auto; padding-top: 26px; width: 100%; max-width: 240px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+.splash-progress-fill { height: 100%; width: 0%; border-radius: 3px; background: linear-gradient(100deg, var(--hp-blue), var(--hp-purple)); transition: width 2s cubic-bezier(.4,0,.2,1); }
+.brand-intro small { display: block; margin-top: 14px; font-size: 11px; color: #7986ad; letter-spacing: .08em; }
 
 /* ── Home ────────────────────────────────────────────────────────────────── */
 .greeting-row { display: flex; align-items: center; justify-content: space-between; padding: 20px 18px 6px; }

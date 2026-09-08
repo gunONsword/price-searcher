@@ -1,0 +1,111 @@
+<svg viewBox="0 0 440 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HARDPRICE">
+  <defs>
+    <radialGradient id="heroGlow" cx="50%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#7db8ff" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#9f7bff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#9f7bff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shroudTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a4666"/>
+      <stop offset="45%" stop-color="#222c46"/>
+      <stop offset="100%" stop-color="#0d1122"/>
+    </linearGradient>
+    <linearGradient id="shroudEdge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8fd7ff"/>
+      <stop offset="50%" stop-color="#8f9dff"/>
+      <stop offset="100%" stop-color="#c98bff"/>
+    </linearGradient>
+    <radialGradient id="fanHub" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#dff4ff"/>
+      <stop offset="55%" stop-color="#7ec4ff"/>
+      <stop offset="100%" stop-color="#3b5fb8"/>
+    </radialGradient>
+    <radialGradient id="fanHub2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f6e8ff"/>
+      <stop offset="55%" stop-color="#c48bff"/>
+      <stop offset="100%" stop-color="#6a3fb0"/>
+    </radialGradient>
+    <linearGradient id="backplate" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#161c33"/>
+      <stop offset="100%" stop-color="#0a0e1c"/>
+    </linearGradient>
+    <linearGradient id="pcieGold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffd98a"/>
+      <stop offset="100%" stop-color="#caa25a"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="220" cy="330" rx="150" ry="18" fill="#03050c" opacity="0.55"/>
+  <circle cx="220" cy="185" r="175" fill="url(#heroGlow)"/>
+
+  <g transform="rotate(-9 220 190)">
+    <!-- backplate sliver -->
+    <rect x="60" y="150" width="330" height="92" rx="14" fill="url(#backplate)"/>
+    <!-- main shroud body -->
+    <rect x="52" y="118" width="330" height="108" rx="18" fill="url(#shroudTop)" stroke="url(#shroudEdge)" stroke-width="2.5"/>
+    <!-- top RGB light strip -->
+    <rect x="52" y="118" width="330" height="9" rx="4.5" fill="url(#shroudEdge)"/>
+    <rect x="52" y="118" width="330" height="9" rx="4.5" fill="url(#shroudEdge)" opacity="0.6" filter="blur(3px)"/>
+    <!-- panel seams -->
+    <line x1="150" y1="126" x2="150" y2="218" stroke="#0a0e1c" stroke-width="2" opacity="0.6"/>
+    <line x1="292" y1="126" x2="292" y2="218" stroke="#0a0e1c" stroke-width="2" opacity="0.6"/>
+    <!-- Fan 1 -->
+    <circle cx="120" cy="172" r="52" fill="#0a0e1c" stroke="url(#shroudEdge)" stroke-width="2.5"/>
+    <circle cx="120" cy="172" r="52" fill="none" stroke="#000" stroke-width="6" opacity="0.25"/>
+    <g stroke="#4c5b86" stroke-width="1.4" fill="#131a30" opacity="0.9">
+      <path d="M120 172 L120 128 A44 44 0 0 1 158 150 Z"/>
+      <path d="M120 172 L158 150 A44 44 0 0 1 158 194 Z"/>
+      <path d="M120 172 L158 194 A44 44 0 0 1 120 216 Z"/>
+      <path d="M120 172 L120 216 A44 44 0 0 1 82 194 Z"/>
+      <path d="M120 172 L82 194 A44 44 0 0 1 82 150 Z"/>
+      <path d="M120 172 L82 150 A44 44 0 0 1 120 128 Z"/>
+    </g>
+    <circle cx="120" cy="172" r="17" fill="url(#fanHub)"/>
+    <circle cx="120" cy="172" r="5" fill="#0a0e1c"/>
+
+    <!-- Fan 2 -->
+    <circle cx="248" cy="172" r="52" fill="#0a0e1c" stroke="url(#shroudEdge)" stroke-width="2.5"/>
+    <circle cx="248" cy="172" r="52" fill="none" stroke="#000" stroke-width="6" opacity="0.25"/>
+    <g stroke="#4c5b86" stroke-width="1.4" fill="#131a30" opacity="0.9">
+      <path d="M248 172 L248 128 A44 44 0 0 1 286 150 Z"/>
+      <path d="M248 172 L286 150 A44 44 0 0 1 286 194 Z"/>
+      <path d="M248 172 L286 194 A44 44 0 0 1 248 216 Z"/>
+      <path d="M248 172 L248 216 A44 44 0 0 1 210 194 Z"/>
+      <path d="M248 172 L210 194 A44 44 0 0 1 210 150 Z"/>
+      <path d="M248 172 L210 150 A44 44 0 0 1 248 128 Z"/>
+    </g>
+    <circle cx="248" cy="172" r="17" fill="url(#fanHub2)"/>
+    <circle cx="248" cy="172" r="5" fill="#0a0e1c"/>
+
+    <!-- vent fins near IO edge -->
+    <g stroke="#33406b" stroke-width="3">
+      <line x1="330" y1="132" x2="330" y2="212"/>
+      <line x1="342" y1="132" x2="342" y2="212"/>
+      <line x1="354" y1="132" x2="354" y2="212"/>
+      <line x1="366" y1="132" x2="366" y2="212"/>
+    </g>
+
+    <!-- PCIe bracket -->
+    <rect x="380" y="140" width="14" height="70" rx="3" fill="url(#backplate)" stroke="#33406b" stroke-width="1.5"/>
+    <rect x="384" y="150" width="6" height="16" rx="2" fill="#0a0e1c"/>
+    <rect x="384" y="172" width="6" height="16" rx="2" fill="#0a0e1c"/>
+
+    <!-- PCIe connector fingers (peeking bottom-left) -->
+    <g>
+      <rect x="60" y="240" width="150" height="14" fill="url(#pcieGold)"/>
+      <rect x="60" y="240" width="150" height="14" fill="#0a0e1c" opacity="0.06"/>
+    </g>
+    <rect x="55" y="228" width="160" height="16" rx="3" fill="url(#backplate)"/>
+  </g>
+
+  <!-- floating light particles -->
+  <g fill="#bfe0ff">
+    <circle cx="88" cy="58" r="2.4" opacity="0.9"/>
+    <circle cx="360" cy="72" r="2" opacity="0.7"/>
+    <circle cx="392" cy="150" r="1.6" opacity="0.8"/>
+    <circle cx="46" cy="200" r="1.8" opacity="0.7"/>
+    <circle cx="120" cy="40" r="1.4" opacity="0.6"/>
+    <circle cx="300" cy="46" r="1.6" opacity="0.6"/>
+    <circle cx="410" cy="230" r="1.8" opacity="0.6"/>
+  </g>
+</svg>
